@@ -1,0 +1,28 @@
+# Git files
+.git
+.gitignore
+
+# Docker files
+Dockerfile
+docker-compose.yaml
+.dockerignore
+
+# Documentation (except README.md and CLAUDE.md which are included)
+README-DOCKER.md
+
+# Environment files (secrets should not be in image)
+.env.example
+
+# Node modules (if any)
+node_modules
+npm-debug.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode
+.idea
+*.swp
+*.swo
