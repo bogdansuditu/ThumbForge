@@ -67,7 +67,7 @@ function initCanvas() {
     canvas.on('object:scaling', syncGlowOverlay);
 
     // Clean up overlays when object is removed
-    canvas.on('object:removed', function(e) {
+    canvas.on('object:removed', function (e) {
         const obj = e.target;
         if (obj._borderOverlay && canvas.contains(obj._borderOverlay)) {
             canvas.remove(obj._borderOverlay);
@@ -225,24 +225,25 @@ function setupLayerLevelBlur() {
             return;
         }
 
-        // Store the original _render methods for each object type
-        const originalRender = fabric.Object.prototype._render;
+        // Store the original drawObject method
+        const originalDrawObject = fabric.Object.prototype.drawObject;
 
-        // Override the _render method to apply blur filter
-        fabric.Object.prototype._render = function(ctx) {
+        // Override drawObject to apply ctx.filter
+        fabric.Object.prototype.drawObject = function (ctx) {
+            // Context is already saved/restored by the caller (render)
+
             // Apply blur filter if this object has blurAmount
             if (this.blurAmount && this.blurAmount > 0) {
-                ctx.save();
                 ctx.filter = `blur(${this.blurAmount}px)`;
+            } else {
+                ctx.filter = 'none';
             }
 
-            // Call the original render method
-            originalRender.call(this, ctx);
+            // Call original draw method
+            originalDrawObject.call(this, ctx);
 
-            // Reset filter if we applied blur
-            if (this.blurAmount && this.blurAmount > 0) {
-                ctx.restore();
-            }
+            // Reset filter
+            ctx.filter = 'none';
         };
     } catch (error) {
         console.error('Error setting up layer-level blur:', error);
@@ -254,14 +255,49 @@ function setupLayerLevelBlur() {
 function updateBackgroundColor(color) {
     backgroundColor = color;
     applyBackgroundColor();
-    updatePropertiesPanel();
+
+    // Update toolbar input if it exists
+    const toolbarInput = document.getElementById('backgroundColor');
+    if (toolbarInput && document.activeElement !== toolbarInput) {
+        toolbarInput.value = color;
+    }
+
+    // Update property panel inputs if they exist and are not focused
+    if (backgroundSelected) {
+        const propColor = document.getElementById('prop-bg-color');
+        if (propColor && document.activeElement !== propColor) {
+            propColor.value = color;
+        }
+
+        const propText = document.getElementById('prop-bg-text');
+        if (propText && document.activeElement !== propText) {
+            propText.value = color;
+        }
+    }
+
+    // Do NOT call updatePropertiesPanel() to avoid re-rendering and losing focus
     saveState();
 }
 
 function updateBackgroundOpacity(opacity) {
     backgroundOpacity = opacity;
     applyBackgroundColor();
-    updatePropertiesPanel();
+
+    // Update property panel text if it exists
+    if (backgroundSelected) {
+        const propValue = document.getElementById('prop-bg-opacity-value');
+        if (propValue) {
+            propValue.textContent = Math.round(opacity * 100) + '%';
+        }
+
+        // Also ensure slider is in sync if changed from elsewhere (rare but good practice)
+        const propSlider = document.getElementById('prop-bg-opacity');
+        if (propSlider && document.activeElement !== propSlider) {
+            propSlider.value = opacity * 100;
+        }
+    }
+
+    // Do NOT call updatePropertiesPanel() to avoid re-rendering and losing focus
     saveState();
 }
 
@@ -425,7 +461,8 @@ function applyImageCornerRadius(img) {
             evented: false,
             originX: 'center',
             originY: 'center',
-            angle: img.angle || 0
+            angle: img.angle || 0,
+            temp: true // Mark as temporary so it doesn't show in layers list
         });
 
         canvas.add(border);
@@ -733,8 +770,8 @@ function handleImageUpload(e) {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = function(event) {
-        fabric.Image.fromURL(event.target.result, function(img) {
+    reader.onload = function (event) {
+        fabric.Image.fromURL(event.target.result, function (img) {
             const scale = Math.min(
                 canvas.width / 2 / img.width,
                 canvas.height / 2 / img.height
@@ -799,17 +836,17 @@ function updateLayersList() {
                 <button class="layer-control-btn visibility-btn ${obj.visible !== false ? 'active' : ''}" title="Toggle Visibility">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         ${obj.visible !== false ?
-                            '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' :
-                            '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
-                        }
+                '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' :
+                '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+            }
                     </svg>
                 </button>
                 <button class="layer-control-btn lock-btn ${obj.lockMovementX ? 'active' : ''}" title="Toggle Lock">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         ${obj.lockMovementX ?
-                            '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>' :
-                            '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/>'
-                        }
+                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>' :
+                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/>'
+            }
                     </svg>
                 </button>
             </div>
@@ -1021,18 +1058,18 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Background Color</label>
                 <div class="color-input-group">
-                    <input type="color" value="${backgroundColor}"
+                    <input type="color" id="prop-bg-color" value="${backgroundColor}"
                            oninput="updateBackgroundColor(this.value)">
-                    <input type="text" class="property-input" value="${backgroundColor}"
+                    <input type="text" id="prop-bg-text" class="property-input" value="${backgroundColor}"
                            oninput="updateBackgroundColor(this.value)">
                 </div>
             </div>
 
             <div class="property-group">
                 <label class="property-label">Background Opacity</label>
-                <input type="range" min="0" max="100" value="${backgroundOpacity * 100}"
-                       oninput="updateBackgroundOpacity(this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-                <span>${Math.round(backgroundOpacity * 100)}%</span>
+                <input type="range" id="prop-bg-opacity" min="0" max="100" value="${backgroundOpacity * 100}"
+                       oninput="updateBackgroundOpacity(this.value / 100)">
+                <span id="prop-bg-opacity-value">${Math.round(backgroundOpacity * 100)}%</span>
             </div>
         `;
         panel.innerHTML = html;
@@ -1589,6 +1626,11 @@ function applyBlur(obj, blurValue) {
     // The actual blur is applied via ctx.filter in the overridden _render method
     obj.blurAmount = blurValue;
 
+    // DISABLE object caching when blur is active so ctx.filter applies correctly
+    // If we rely on cache, the filter is applied to the cached image which might be clipped
+    // or not updated frequently enough.
+    obj.objectCaching = (blurValue === 0);
+
     // Force re-render to apply the new blur
     canvas.renderAll();
 }
@@ -1634,7 +1676,8 @@ function createGlowOverlay(obj) {
             }),
             selectable: false,
             evented: false,
-            opacity: 0.8
+            opacity: 0.8,
+            temp: true // Mark as temporary so it doesn't show in layers list
         });
 
         obj._glowOverlay = cloned;
