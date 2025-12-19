@@ -7,29 +7,47 @@ const MAX_HISTORY = 50;
 let isDrawingPath = false;
 let pathPoints = [];
 let tempPathLine = null;
-let backgroundLayer = null;
+let backgroundColor = '#ffffff'; // Background is now a property, not an object
+let backgroundOpacity = 1.0; // Background opacity (0-1)
+let backgroundSelected = false; // Track if background is selected for properties panel
 let autoSaveTimeout = null;
 
 
 // Initialize canvas
 function initCanvas() {
+    console.log('Initializing canvas...');
     const width = parseInt(document.getElementById('canvasWidth').value) || 1280;
     const height = parseInt(document.getElementById('canvasHeight').value) || 720;
 
+    console.log('Creating Fabric canvas...');
     canvas = new fabric.Canvas('canvas', {
         width: width,
         height: height,
-        backgroundColor: 'transparent',
+        backgroundColor: '#ffffff',
         preserveObjectStacking: true
     });
 
-    // Create background layer
-    createBackgroundLayer();
+    console.log('Applying background color...');
+    // Apply background color with opacity
+    applyBackgroundColor();
+
+    console.log('Setting up layer-level blur...');
+    // Initialize layer-level blur
+    setupLayerLevelBlur();
 
     // Event listeners
-    canvas.on('selection:created', updatePropertiesPanel);
-    canvas.on('selection:updated', updatePropertiesPanel);
-    canvas.on('selection:cleared', clearPropertiesPanel);
+    canvas.on('selection:created', () => {
+        backgroundSelected = false;
+        updatePropertiesPanel();
+    });
+    canvas.on('selection:updated', () => {
+        backgroundSelected = false;
+        updatePropertiesPanel();
+    });
+    canvas.on('selection:cleared', () => {
+        backgroundSelected = false;
+        clearPropertiesPanel();
+    });
     canvas.on('object:modified', () => {
         saveState();
         updateLayersList();
@@ -70,10 +88,14 @@ function initCanvas() {
     canvas.on('mouse:dblclick', finishPath);
 
     // Try to restore from auto-save
+    console.log('Restoring auto-save...');
     restoreAutoSave();
 
+    console.log('Saving initial state...');
     saveState();
     updateLayersList();
+
+    console.log('Canvas initialization complete!');
 }
 
 // Auto-save functionality
@@ -89,8 +111,10 @@ function autoSave() {
                 version: '1.0',
                 canvasWidth: canvas.width,
                 canvasHeight: canvas.height,
+                backgroundColor: backgroundColor,
+                backgroundOpacity: backgroundOpacity,
                 timestamp: Date.now(),
-                objects: canvas.toJSON(['isBackground', 'name', 'glow', 'originalShadow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
+                objects: canvas.toJSON(['name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
             };
 
             localStorage.setItem('thumbforge-autosave', JSON.stringify(projectData));
@@ -118,18 +142,22 @@ function restoreAutoSave() {
 
         // Clear current canvas
         canvas.clear();
-        backgroundLayer = null;
+
+        // Restore background color and opacity if saved
+        if (projectData.backgroundColor) {
+            backgroundColor = projectData.backgroundColor;
+        }
+        if (projectData.backgroundOpacity !== undefined) {
+            backgroundOpacity = projectData.backgroundOpacity;
+        }
+        applyBackgroundColor();
 
         // Load objects
         canvas.loadFromJSON(projectData.objects, () => {
-            // Find and set the background layer reference
+            // Remove any old background objects (from old saves)
             const objects = canvas.getObjects();
-            backgroundLayer = objects.find(obj => obj.isBackground);
-
-            if (backgroundLayer) {
-                backgroundLayer.sendToBack();
-                ensureBackgroundLocked();
-            }
+            const oldBgObjects = objects.filter(obj => obj.isBackground);
+            oldBgObjects.forEach(obj => canvas.remove(obj));
 
             // Restore image corner radius clipPaths and blur
             objects.forEach(obj => {
@@ -150,8 +178,7 @@ function restoreAutoSave() {
 
     } catch (error) {
         console.error('Failed to restore auto-save:', error);
-        // If restore fails, just start fresh
-        createBackgroundLayer();
+        // If restore fails, just start fresh (background is already set)
     }
 }
 
@@ -166,8 +193,10 @@ function saveImmediately() {
             version: '1.0',
             canvasWidth: canvas.width,
             canvasHeight: canvas.height,
+            backgroundColor: backgroundColor,
+            backgroundOpacity: backgroundOpacity,
             timestamp: Date.now(),
-            objects: canvas.toJSON(['isBackground', 'name', 'glow', 'originalShadow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
+            objects: canvas.toJSON(['isBackground', 'name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
         };
 
         localStorage.setItem('thumbforge-autosave', JSON.stringify(projectData));
@@ -177,59 +206,91 @@ function saveImmediately() {
 }
 
 // Background Layer Management
-function createBackgroundLayer() {
-    if (backgroundLayer) {
-        canvas.remove(backgroundLayer);
+// Setup layer-level blur by overriding Fabric.js object rendering
+// This applies ctx.filter before each object renders, like template.html does
+function setupLayerLevelBlur() {
+    try {
+        // Check if Fabric.js is loaded
+        if (typeof fabric === 'undefined' || !fabric.Object) {
+            console.warn('Fabric.js not loaded yet, skipping blur setup');
+            return;
+        }
+
+        // Test browser support for ctx.filter
+        const testCanvas = document.createElement('canvas');
+        const testCtx = testCanvas.getContext('2d');
+        testCtx.filter = 'blur(5px)';
+        if (testCtx.filter !== 'blur(5px)') {
+            console.warn('Canvas filters not supported in this browser - blur effects will not work');
+            return;
+        }
+
+        // Store the original _render methods for each object type
+        const originalRender = fabric.Object.prototype._render;
+
+        // Override the _render method to apply blur filter
+        fabric.Object.prototype._render = function(ctx) {
+            // Apply blur filter if this object has blurAmount
+            if (this.blurAmount && this.blurAmount > 0) {
+                ctx.save();
+                ctx.filter = `blur(${this.blurAmount}px)`;
+            }
+
+            // Call the original render method
+            originalRender.call(this, ctx);
+
+            // Reset filter if we applied blur
+            if (this.blurAmount && this.blurAmount > 0) {
+                ctx.restore();
+            }
+        };
+    } catch (error) {
+        console.error('Error setting up layer-level blur:', error);
     }
-
-    backgroundLayer = new fabric.Rect({
-        left: -1,
-        top: -1,
-        width: canvas.width + 2,
-        height: canvas.height + 2,
-        fill: '#ffffff',
-        selectable: false,
-        evented: false,
-        hasControls: false,
-        hasBorders: false,
-        lockMovementX: true,
-        lockMovementY: true,
-        lockScalingX: true,
-        lockScalingY: true,
-        lockRotation: true,
-        hoverCursor: 'default',
-        name: 'Background',
-        isBackground: true
-    });
-
-    canvas.add(backgroundLayer);
-    backgroundLayer.sendToBack();
-    canvas.renderAll();
 }
 
-function ensureBackgroundAtBottom() {
-    if (backgroundLayer && canvas.getObjects().indexOf(backgroundLayer) !== 0) {
-        backgroundLayer.sendToBack();
-        canvas.renderAll();
-    }
+// Background management functions removed - background is now canvas.backgroundColor property
+
+function updateBackgroundColor(color) {
+    backgroundColor = color;
+    applyBackgroundColor();
+    updatePropertiesPanel();
+    saveState();
 }
 
+function updateBackgroundOpacity(opacity) {
+    backgroundOpacity = opacity;
+    applyBackgroundColor();
+    updatePropertiesPanel();
+    saveState();
+}
+
+function applyBackgroundColor() {
+    if (!canvas) return; // Safety check
+
+    // Convert hex color to rgba with opacity
+    let finalColor = backgroundColor;
+
+    // If it's a hex color, convert to rgba
+    if (backgroundColor.startsWith('#')) {
+        const hex = backgroundColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        finalColor = `rgba(${r}, ${g}, ${b}, ${backgroundOpacity})`;
+    } else if (backgroundColor.startsWith('rgb')) {
+        // If already rgb/rgba, replace alpha
+        finalColor = backgroundColor.replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, `rgba($1, $2, $3, ${backgroundOpacity})`);
+    }
+
+    canvas.setBackgroundColor(finalColor, canvas.renderAll.bind(canvas));
+}
+
+// Removed ensureBackgroundAtBottom() and ensureBackgroundLocked() - no longer needed
 function ensureBackgroundLocked() {
-    if (!backgroundLayer) return;
-
-    // Force all the lock properties to ensure background cannot be moved or manipulated
-    backgroundLayer.set({
-        selectable: false,
-        evented: false,
-        hasControls: false,
-        hasBorders: false,
-        lockMovementX: true,
-        lockMovementY: true,
-        lockScalingX: true,
-        lockScalingY: true,
-        lockRotation: true,
-        hoverCursor: 'default'
-    });
+    // Background is no longer an object, so this function is deprecated
+    // Keeping empty function to avoid breaking existing code
+    return;
 }
 
 // Handle uniform corner radius during scaling
@@ -712,20 +773,16 @@ function updateLayersList() {
     const objects = canvas.getObjects().reverse();
 
     objects.forEach((obj, index) => {
-        if (obj.temp) return; // Skip temporary objects
+        // Skip temporary objects and old background objects
+        if (obj.temp || obj.isBackground) return;
 
         const actualIndex = canvas.getObjects().length - 1 - index;
         const layerItem = document.createElement('div');
         layerItem.className = 'layer-item';
         layerItem.dataset.index = actualIndex;
 
-        // Mark background layer differently
-        if (obj.isBackground) {
-            layerItem.classList.add('background-layer');
-        } else {
-            // Only non-background layers are draggable
-            layerItem.draggable = true;
-        }
+        // All layers are draggable (no background object)
+        layerItem.draggable = true;
 
         if (canvas.getActiveObject() === obj) {
             layerItem.classList.add('active');
@@ -735,71 +792,69 @@ function updateLayersList() {
         const name = getLayerName(obj, actualIndex);
 
         layerItem.innerHTML = `
-            ${!obj.isBackground ? '<span class="drag-handle">☰</span>' : '<span class="drag-handle-spacer"></span>'}
+            <span class="drag-handle">☰</span>
             <span class="layer-icon">${icon}</span>
             <span class="layer-name">${name}</span>
             <div class="layer-controls">
-                ${!obj.isBackground ? `
-                    <button class="layer-control-btn visibility-btn ${obj.visible !== false ? 'active' : ''}" title="Toggle Visibility">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            ${obj.visible !== false ?
-                                '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' :
-                                '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
-                            }
-                        </svg>
-                    </button>
-                    <button class="layer-control-btn lock-btn ${obj.lockMovementX ? 'active' : ''}" title="Toggle Lock">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            ${obj.lockMovementX ?
-                                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>' :
-                                '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/>'
-                            }
-                        </svg>
-                    </button>
-                ` : ''}
+                <button class="layer-control-btn visibility-btn ${obj.visible !== false ? 'active' : ''}" title="Toggle Visibility">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        ${obj.visible !== false ?
+                            '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' :
+                            '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
+                        }
+                    </svg>
+                </button>
+                <button class="layer-control-btn lock-btn ${obj.lockMovementX ? 'active' : ''}" title="Toggle Lock">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        ${obj.lockMovementX ?
+                            '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>' :
+                            '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/>'
+                        }
+                    </svg>
+                </button>
             </div>
         `;
 
-        // Drag and drop events (only for non-background layers)
-        if (!obj.isBackground) {
-            layerItem.addEventListener('dragstart', handleDragStart);
-            layerItem.addEventListener('dragover', handleDragOver);
-            layerItem.addEventListener('drop', handleDrop);
-            layerItem.addEventListener('dragenter', handleDragEnter);
-            layerItem.addEventListener('dragleave', handleDragLeave);
-            layerItem.addEventListener('dragend', handleDragEnd);
+        // Drag and drop events (all layers are draggable now)
+        layerItem.addEventListener('dragstart', handleDragStart);
+        layerItem.addEventListener('dragover', handleDragOver);
+        layerItem.addEventListener('drop', handleDrop);
+        layerItem.addEventListener('dragenter', handleDragEnter);
+        layerItem.addEventListener('dragleave', handleDragLeave);
+        layerItem.addEventListener('dragend', handleDragEnd);
 
-            const visibilityBtn = layerItem.querySelector('.visibility-btn');
-            if (visibilityBtn) {
-                visibilityBtn.addEventListener('click', (e) => {
-                    obj.visible = !obj.visible;
-                    canvas.renderAll();
-                    updateLayersList();
-                    e.stopPropagation();
-                });
-            }
+        const visibilityBtn = layerItem.querySelector('.visibility-btn');
+        if (visibilityBtn) {
+            visibilityBtn.addEventListener('click', (e) => {
+                obj.visible = !obj.visible;
+                canvas.renderAll();
+                updateLayersList();
+                e.stopPropagation();
+            });
+        }
 
-            const lockBtn = layerItem.querySelector('.lock-btn');
-            if (lockBtn) {
-                lockBtn.addEventListener('click', (e) => {
-                    const locked = !obj.lockMovementX;
-                    obj.lockMovementX = locked;
-                    obj.lockMovementY = locked;
-                    obj.lockScalingX = locked;
-                    obj.lockScalingY = locked;
-                    obj.lockRotation = locked;
-                    obj.selectable = !locked;
-                    canvas.renderAll();
-                    updateLayersList();
-                    e.stopPropagation();
-                });
-            }
+        const lockBtn = layerItem.querySelector('.lock-btn');
+        if (lockBtn) {
+            lockBtn.addEventListener('click', (e) => {
+                const locked = !obj.lockMovementX;
+                obj.lockMovementX = locked;
+                obj.lockMovementY = locked;
+                obj.lockScalingX = locked;
+                obj.lockScalingY = locked;
+                obj.lockRotation = locked;
+                obj.selectable = !locked;
+                canvas.renderAll();
+                updateLayersList();
+                e.stopPropagation();
+            });
         }
 
         // Select layer
         layerItem.addEventListener('click', (e) => {
             // Don't select if clicking on drag handle
             if (e.target.classList.contains('drag-handle')) return;
+
+            backgroundSelected = false; // Clear background selection when selecting a layer
 
             // For background layer, temporarily make it selectable
             if (obj.isBackground) {
@@ -818,8 +873,31 @@ function updateLayersList() {
         layersList.appendChild(layerItem);
     });
 
-    // Ensure background stays at bottom
-    ensureBackgroundAtBottom();
+    // Add background visual layer (always at bottom)
+    const bgLayerItem = document.createElement('div');
+    bgLayerItem.className = `layer-item background-layer ${backgroundSelected ? 'active' : ''}`;
+    bgLayerItem.style.cursor = 'pointer';
+
+    bgLayerItem.innerHTML = `
+        <span class="drag-handle" style="visibility: hidden;">☰</span>
+        <span class="layer-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/>
+            </svg>
+        </span>
+        <span class="layer-name">Background</span>
+        <div class="layer-controls"></div>
+    `;
+
+    bgLayerItem.addEventListener('click', () => {
+        backgroundSelected = true;
+        canvas.discardActiveObject();
+        canvas.renderAll();
+        updatePropertiesPanel();
+        updateLayersList();
+    });
+
+    layersList.appendChild(bgLayerItem);
 }
 
 // Drag and Drop handlers for layer reordering
@@ -868,9 +946,6 @@ function handleDrop(e) {
 
         // Insert at new position
         canvas.insertAt(draggedObj, targetIndex, false);
-
-        // Ensure background stays at bottom
-        ensureBackgroundAtBottom();
 
         canvas.renderAll();
         updateLayersList();
@@ -937,31 +1012,40 @@ function getLayerName(obj, index) {
 
 // Properties Panel
 function updatePropertiesPanel() {
+    const panel = document.getElementById('propertiesPanel');
+    let html = '';
+
+    // Handle background selection
+    if (backgroundSelected) {
+        html += `
+            <div class="property-group">
+                <label class="property-label">Background Color</label>
+                <div class="color-input-group">
+                    <input type="color" value="${backgroundColor}"
+                           oninput="updateBackgroundColor(this.value)">
+                    <input type="text" class="property-input" value="${backgroundColor}"
+                           oninput="updateBackgroundColor(this.value)">
+                </div>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Background Opacity</label>
+                <input type="range" min="0" max="100" value="${backgroundOpacity * 100}"
+                       oninput="updateBackgroundOpacity(this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
+                <span>${Math.round(backgroundOpacity * 100)}%</span>
+            </div>
+        `;
+        panel.innerHTML = html;
+        return;
+    }
+
     const activeObj = canvas.getActiveObject();
     if (!activeObj) {
         clearPropertiesPanel();
         return;
     }
 
-    const panel = document.getElementById('propertiesPanel');
-    let html = '';
-
-    // Background layer properties
-    if (activeObj.isBackground) {
-        html += `
-            <div class="property-group">
-                <label class="property-label">Background Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${activeObj.fill}"
-                           oninput="updateObjectProperty('fill', this.value)">
-                    <input type="text" class="property-input" value="${activeObj.fill}"
-                           oninput="updateObjectProperty('fill', this.value)">
-                </div>
-            </div>
-        `;
-        panel.innerHTML = html;
-        return;
-    }
+    // Background is no longer an object, so no background properties in this panel
 
     // Common properties
     html += `
@@ -1029,36 +1113,36 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow && !isGlowShadow(activeObj.shadow) ? 'Remove Shadow' : 'Add Shadow'}
+                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
                 </button>
             </div>
 
-            ${activeObj.shadow && !isGlowShadow(activeObj.shadow) || (activeObj.glow && activeObj.originalShadow) ? `
+            ${activeObj.shadow ? `
                 <div class="property-group">
                     <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}"
+                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
                            oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}px</span>
+                    <span>${activeObj.shadow.blur || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset X</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}px</span>
+                    <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}px</span>
+                    <span>${activeObj.shadow.offsetY || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
                     <div class="color-input-group">
-                        <input type="color" value="${((activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.color : activeObj.shadow.color) || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
                                oninput="updateShadowProperty('color', this.value)">
                     </div>
                 </div>
@@ -1187,36 +1271,36 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow && !isGlowShadow(activeObj.shadow) ? 'Remove Shadow' : 'Add Shadow'}
+                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
                 </button>
             </div>
 
-            ${activeObj.shadow && !isGlowShadow(activeObj.shadow) || (activeObj.glow && activeObj.originalShadow) ? `
+            ${activeObj.shadow ? `
                 <div class="property-group">
                     <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}"
+                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
                            oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}px</span>
+                    <span>${activeObj.shadow.blur || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset X</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}px</span>
+                    <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}px</span>
+                    <span>${activeObj.shadow.offsetY || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
                     <div class="color-input-group">
-                        <input type="color" value="${((activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.color : activeObj.shadow.color) || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
                                oninput="updateShadowProperty('color', this.value)">
                     </div>
                 </div>
@@ -1276,36 +1360,36 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow && !isGlowShadow(activeObj.shadow) ? 'Remove Shadow' : 'Add Shadow'}
+                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
                 </button>
             </div>
 
-            ${activeObj.shadow && !isGlowShadow(activeObj.shadow) || (activeObj.glow && activeObj.originalShadow) ? `
+            ${activeObj.shadow ? `
                 <div class="property-group">
                     <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}"
+                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
                            oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}px</span>
+                    <span>${activeObj.shadow.blur || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset X</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}px</span>
+                    <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}px</span>
+                    <span>${activeObj.shadow.offsetY || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
                     <div class="color-input-group">
-                        <input type="color" value="${((activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.color : activeObj.shadow.color) || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
                                oninput="updateShadowProperty('color', this.value)">
                     </div>
                 </div>
@@ -1376,36 +1460,36 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow && !isGlowShadow(activeObj.shadow) ? 'Remove Shadow' : 'Add Shadow'}
+                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
                 </button>
             </div>
 
-            ${activeObj.shadow && !isGlowShadow(activeObj.shadow) || (activeObj.glow && activeObj.originalShadow) ? `
+            ${activeObj.shadow ? `
                 <div class="property-group">
                     <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}"
+                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
                            oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.blur : activeObj.shadow.blur) || 0}px</span>
+                    <span>${activeObj.shadow.blur || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset X</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetX : activeObj.shadow.offsetX) || 0}px</span>
+                    <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}"
+                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${(activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.offsetY : activeObj.shadow.offsetY) || 0}px</span>
+                    <span>${activeObj.shadow.offsetY || 0}px</span>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
                     <div class="color-input-group">
-                        <input type="color" value="${((activeObj.glow && activeObj.originalShadow ? activeObj.originalShadow.color : activeObj.shadow.color) || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
                                oninput="updateShadowProperty('color', this.value)">
                     </div>
                 </div>
@@ -1501,88 +1585,23 @@ function updateImageStroke(property, value) {
 function applyBlur(obj, blurValue) {
     if (!obj) return;
 
+    // Simply store the blur amount on the object
+    // The actual blur is applied via ctx.filter in the overridden _render method
     obj.blurAmount = blurValue;
 
-    // Force cache refresh
-    obj.objectCaching = false;
-    obj.objectCaching = true;
-
-    if (blurValue === 0) {
-        obj.filters = [];
-        obj.set({ padding: 0 });
-    } else {
-        // Add padding to allow blur overflow
-        const padding = Math.max(50, blurValue * 3);
-        obj.set({ padding: padding });
-
-        // Apply blur filter
-        obj.filters = [new fabric.Image.filters.Blur({
-            blur: blurValue / 100
-        })];
-    }
-
-    // Apply the filters
-    if (typeof obj.applyFilters === 'function') {
-        obj.applyFilters();
-    }
-
-    obj.dirty = true;
+    // Force re-render to apply the new blur
     canvas.renderAll();
 }
 
-function combineShadowEffects(obj) {
-    // Combine glow and shadow effects
-    // Since Fabric.js only allows one shadow, we use shadow for the actual shadow
-    // and create a glow overlay when both are present
 
-    let finalShadow = null;
+function createGlowOverlay(obj) {
+    if (!obj.glow) return;
 
-    // Remove existing glow overlay if present
+    // Remove existing overlay first
     if (obj._glowOverlay && canvas.contains(obj._glowOverlay)) {
         canvas.remove(obj._glowOverlay);
         obj._glowOverlay = null;
     }
-
-    const hasGlow = obj.glow && obj.glow.blur > 0;
-    const hasShadow = obj.originalShadow || (obj.shadow && !isGlowShadow(obj.shadow));
-
-    if (hasGlow && hasShadow) {
-        // Both glow and shadow - use shadow property for shadow, create overlay for glow
-        finalShadow = obj.originalShadow || obj.shadow;
-
-        // Create glow overlay
-        createGlowOverlay(obj);
-    } else if (hasGlow) {
-        // Only glow - use shadow property
-        const intensity = obj.glow.intensity !== undefined ? obj.glow.intensity : 1.0;
-        let glowColor = obj.glow.color || 'rgba(255,255,255,0.8)';
-
-        // Parse and apply intensity
-        const rgbaMatch = glowColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-        if (rgbaMatch) {
-            const r = rgbaMatch[1];
-            const g = rgbaMatch[2];
-            const b = rgbaMatch[3];
-            const baseAlpha = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1.0;
-            glowColor = `rgba(${r}, ${g}, ${b}, ${Math.min(1.0, baseAlpha * intensity * 2.0)})`;
-        }
-
-        finalShadow = new fabric.Shadow({
-            color: glowColor,
-            blur: obj.glow.blur,
-            offsetX: 0,
-            offsetY: 0
-        });
-    } else if (hasShadow) {
-        // Only shadow
-        finalShadow = obj.originalShadow || obj.shadow;
-    }
-
-    obj.shadow = finalShadow;
-}
-
-function createGlowOverlay(obj) {
-    if (!obj.glow) return;
 
     const intensity = obj.glow.intensity !== undefined ? obj.glow.intensity : 1.0;
     let glowColor = obj.glow.color || 'rgba(255,255,255,0.8)';
@@ -1594,7 +1613,7 @@ function createGlowOverlay(obj) {
         const g = rgbaMatch[2];
         const b = rgbaMatch[3];
         const baseAlpha = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1.0;
-        glowColor = `rgba(${r}, ${g}, ${b}, ${Math.min(1.0, baseAlpha * intensity * 2.0)})`;
+        glowColor = `rgba(${r}, ${g}, ${b}, ${Math.min(1.0, baseAlpha * intensity)})`;
     }
 
     // Clone object and create glow version
@@ -1746,34 +1765,17 @@ function toggleShadow() {
     const activeObj = canvas.getActiveObject();
     if (!activeObj) return;
 
-    // Check if current shadow is from glow
-    const isGlow = activeObj.shadow && isGlowShadow(activeObj.shadow);
-
-    if (activeObj.shadow && !isGlow) {
-        // Remove regular shadow
+    if (activeObj.shadow) {
+        // Remove shadow
         activeObj.shadow = null;
-        activeObj.originalShadow = null;
-
-        // Reapply glow if it exists
-        if (activeObj.glow) {
-            applyGlowEffect(activeObj);
-        }
     } else {
-        // Add regular shadow
-        const newShadow = new fabric.Shadow({
+        // Add shadow
+        activeObj.shadow = new fabric.Shadow({
             color: 'rgba(0,0,0,0.5)',
             blur: 10,
             offsetX: 4,
             offsetY: 4
         });
-
-        if (activeObj.glow) {
-            // Store shadow for later and keep glow active
-            activeObj.originalShadow = newShadow;
-        } else {
-            // No glow, just apply shadow directly
-            activeObj.shadow = newShadow;
-        }
     }
 
     canvas.renderAll();
@@ -1783,16 +1785,9 @@ function toggleShadow() {
 
 function updateShadowProperty(property, value) {
     const activeObj = canvas.getActiveObject();
-    if (!activeObj) return;
+    if (!activeObj || !activeObj.shadow) return;
 
-    // If glow is active, update the stored original shadow
-    if (activeObj.glow && activeObj.originalShadow) {
-        activeObj.originalShadow[property] = value;
-    } else if (activeObj.shadow && !isGlowShadow(activeObj.shadow)) {
-        // Update regular shadow
-        activeObj.shadow[property] = value;
-    }
-
+    activeObj.shadow[property] = value;
     canvas.renderAll();
     saveState();
 }
@@ -1802,8 +1797,12 @@ function toggleGlow() {
     if (!activeObj) return;
 
     if (activeObj.glow) {
-        // Remove glow metadata
+        // Remove glow metadata and overlay
         activeObj.glow = null;
+        if (activeObj._glowOverlay && canvas.contains(activeObj._glowOverlay)) {
+            canvas.remove(activeObj._glowOverlay);
+            activeObj._glowOverlay = null;
+        }
     } else {
         // Add glow metadata
         activeObj.glow = {
@@ -1811,10 +1810,9 @@ function toggleGlow() {
             intensity: 1.0,
             color: 'rgba(255,255,255,0.8)'
         };
+        createGlowOverlay(activeObj);
     }
 
-    // Apply glow as an additional shadow-like effect
-    applyGlowEffect(activeObj);
     canvas.renderAll();
     updatePropertiesPanel();
     saveState();
@@ -1825,72 +1823,11 @@ function updateGlowProperty(property, value) {
     if (!activeObj || !activeObj.glow) return;
 
     activeObj.glow[property] = value;
-
-    // Reapply glow effect with updated properties
-    applyGlowEffect(activeObj);
+    createGlowOverlay(activeObj);
     canvas.renderAll();
     saveState();
 }
 
-function applyGlowEffect(obj) {
-    if (!obj.glow) {
-        // Remove glow effect - restore original shadow if it exists
-        if (obj.originalShadow) {
-            obj.shadow = obj.originalShadow;
-            obj.originalShadow = null;
-        }
-        return;
-    }
-
-    // If object has a regular shadow, we need to handle both
-    // Store original shadow if we haven't already
-    if (obj.shadow && !obj.originalShadow && !isGlowShadow(obj.shadow)) {
-        obj.originalShadow = obj.shadow;
-    }
-
-    // Apply intensity to glow color
-    const intensity = obj.glow.intensity !== undefined ? obj.glow.intensity : 1.0;
-    let glowColor = obj.glow.color || 'rgba(255,255,255,0.8)';
-
-    // Parse color and adjust opacity based on intensity
-    const rgbaMatch = glowColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    if (rgbaMatch) {
-        const r = rgbaMatch[1];
-        const g = rgbaMatch[2];
-        const b = rgbaMatch[3];
-        const baseAlpha = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1.0;
-        const adjustedAlpha = baseAlpha * intensity;
-        glowColor = `rgba(${r}, ${g}, ${b}, ${adjustedAlpha})`;
-    } else {
-        // If it's a hex color, convert to rgba with intensity
-        const hexMatch = glowColor.match(/#([0-9a-fA-F]{6})/);
-        if (hexMatch) {
-            const hex = hexMatch[1];
-            const r = parseInt(hex.substr(0, 2), 16);
-            const g = parseInt(hex.substr(2, 2), 16);
-            const b = parseInt(hex.substr(4, 2), 16);
-            glowColor = `rgba(${r}, ${g}, ${b}, ${intensity})`;
-        }
-    }
-
-    // Create glow as a shadow with zero offset
-    const glowShadow = new fabric.Shadow({
-        color: glowColor,
-        blur: obj.glow.blur,
-        offsetX: 0,
-        offsetY: 0
-    });
-
-    // If there's an original shadow, we need to combine effects
-    // For now, we'll apply glow as the primary effect
-    // (Fabric.js limitation: only one shadow per object)
-    obj.shadow = glowShadow;
-}
-
-function isGlowShadow(shadow) {
-    // Check if a shadow is a glow (zero offset)
-    return shadow && shadow.offsetX === 0 && shadow.offsetY === 0;
-}
 
 
 // History Management
@@ -1929,20 +1866,15 @@ function redo() {
 
 function loadState(state) {
     canvas.loadFromJSON(state, () => {
-        // Re-find background layer and ensure it's locked
+        // Remove any old background objects (from old states)
         const objects = canvas.getObjects();
-        backgroundLayer = objects.find(obj => obj.isBackground);
-        if (backgroundLayer) {
-            ensureBackgroundLocked();
-        }
+        const oldBgObjects = objects.filter(obj => obj.isBackground);
+        oldBgObjects.forEach(obj => canvas.remove(obj));
 
-        // Restore image corner radius clipPaths and blur
+        // Restore image corner radius clipPaths
         objects.forEach(obj => {
             if (obj.type === 'image' && obj.cornerRadius > 0) {
                 applyImageCornerRadius(obj);
-            }
-            if (obj.blurAmount > 0) {
-                applyBlur(obj, obj.blurAmount);
             }
         });
 
@@ -1955,15 +1887,16 @@ function loadState(state) {
 // Layer Actions
 function deleteLayer() {
     const activeObj = canvas.getActiveObject();
-    if (activeObj && !activeObj.isBackground) {
+    if (activeObj) {
         canvas.remove(activeObj);
         canvas.renderAll();
+        saveState();
     }
 }
 
 function duplicateLayer() {
     const activeObj = canvas.getActiveObject();
-    if (!activeObj || activeObj.isBackground) return;
+    if (!activeObj) return;
 
     activeObj.clone((cloned) => {
         cloned.set({
@@ -1990,11 +1923,8 @@ function sendToBack() {
     const activeObj = canvas.getActiveObject();
     if (!activeObj || activeObj.isBackground) return;
 
-    // Send to back but keep above the background layer
+    // Send to back
     canvas.sendToBack(activeObj);
-
-    // Ensure background stays at the bottom (index 0)
-    ensureBackgroundAtBottom();
 
     canvas.renderAll();
     updateLayersList();
@@ -2018,9 +1948,9 @@ function exportCanvas(format = 'png') {
 // Clear Canvas
 function clearCanvas() {
     if (confirm('Are you sure you want to clear the canvas?')) {
-        // Remove all objects except background
-        const objects = canvas.getObjects().filter(obj => !obj.isBackground);
-        objects.forEach(obj => canvas.remove(obj));
+        // Remove all objects (no background object anymore)
+        canvas.clear();
+        canvas.setBackgroundColor(backgroundColor);
         canvas.renderAll();
         saveState();
     }
@@ -2034,20 +1964,11 @@ function newProject() {
 
         canvas.setDimensions({ width, height });
 
-        // Remove all objects except background
-        const objects = canvas.getObjects().filter(obj => !obj.isBackground);
-        objects.forEach(obj => canvas.remove(obj));
+        // Remove all objects (no background object anymore)
+        canvas.clear();
+        canvas.setBackgroundColor(backgroundColor);
 
-        // Update background size and position
-        if (backgroundLayer) {
-            backgroundLayer.set({
-                left: -1,
-                top: -1,
-                width: width + 2,
-                height: height + 2
-            });
-            backgroundLayer.sendToBack();
-        }
+        // Background is now canvas.backgroundColor - no object to resize
 
         canvas.renderAll();
         history = [];
@@ -2081,16 +2002,7 @@ function changeCanvasSize() {
 function updateCanvasDimensions(width, height) {
     canvas.setDimensions({ width, height });
 
-    // Update background layer size and position
-    if (backgroundLayer) {
-        backgroundLayer.set({
-            left: -1,
-            top: -1,
-            width: width + 2,
-            height: height + 2
-        });
-        backgroundLayer.sendToBack();
-    }
+    // Background is now canvas.backgroundColor - no object to resize
 
     canvas.renderAll();
     saveState();
@@ -2102,7 +2014,9 @@ function saveProject() {
         version: '1.0',
         canvasWidth: canvas.width,
         canvasHeight: canvas.height,
-        objects: canvas.toJSON(['isBackground', 'name', 'glow', 'originalShadow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
+        backgroundColor: backgroundColor,
+        backgroundOpacity: backgroundOpacity,
+        objects: canvas.toJSON(['name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
     };
 
     const dataStr = JSON.stringify(projectData, null, 2);
@@ -2140,27 +2054,29 @@ function loadProject() {
 
                 // Clear current canvas
                 canvas.clear();
-                backgroundLayer = null;
+
+                // Restore background color and opacity if saved
+                if (projectData.backgroundColor) {
+                    backgroundColor = projectData.backgroundColor;
+                }
+                if (projectData.backgroundOpacity !== undefined) {
+                    backgroundOpacity = projectData.backgroundOpacity;
+                }
+                applyBackgroundColor();
 
                 // Load objects
                 canvas.loadFromJSON(projectData.objects, () => {
-                    // Find and set the background layer reference
+                    // Remove any old background objects (from old saves)
                     const objects = canvas.getObjects();
-                    backgroundLayer = objects.find(obj => obj.isBackground);
+                    const oldBgObjects = objects.filter(obj => obj.isBackground);
+                    oldBgObjects.forEach(obj => canvas.remove(obj));
 
-                    if (backgroundLayer) {
-                        backgroundLayer.sendToBack();
-                        ensureBackgroundLocked();
-                    }
-
-                    // Restore image corner radius clipPaths and blur
+                    // Restore image corner radius clipPaths
                     objects.forEach(obj => {
                         if (obj.type === 'image' && obj.cornerRadius > 0) {
                             applyImageCornerRadius(obj);
                         }
-                        if (obj.blurAmount > 0) {
-                            applyBlur(obj, obj.blurAmount);
-                        }
+                        // Blur is now applied automatically via overridden _render method
                     });
 
                     canvas.renderAll();
@@ -2244,7 +2160,12 @@ document.addEventListener('keydown', (e) => {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', () => {
-    initCanvas();
+    try {
+        initCanvas();
+    } catch (error) {
+        console.error('Error initializing canvas:', error);
+        alert('Error initializing canvas. Check console for details.');
+    }
 
     // Tool buttons
     document.querySelectorAll('.tool-btn[data-tool]').forEach(btn => {

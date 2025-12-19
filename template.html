@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebPhoto Editor - Pro</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Inter:wght@300;400;500;600&family=Lato:wght@300;400;700&family=Lobster&family=Montserrat:wght@300;400;600&family=Open+Sans:wght@300;400;600&family=Oswald:wght@400;500&family=Pacifico&family=Playfair+Display:wght@400;700&family=Roboto+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1e1e1e;
+            color: #e5e5e5;
+            overflow: hidden;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        .canvas-container {
+            background-image: conic-gradient(#2a2a2a 25%, #333333 25%, #333333 50%, #2a2a2a 50%, #2a2a2a 75%, #333333 75%, #333333 100%);
+            background-size: 20px 20px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+            transform-origin: center center;
+        }
+
+        .tool-btn.active {
+            background-color: #3b82f6;
+            color: white;
+        }
+
+        .layer-item.active {
+            background-color: #374151;
+            border-left: 3px solid #3b82f6;
+        }
+
+        .layer-item.dragging {
+            opacity: 0.5;
+            border: 2px dashed #4b5563;
+        }
+
+        .layer-child {
+            margin-left: 20px;
+            border-left: 1px solid #4b5563;
+        }
+
+        input[type="color"] {
+            -webkit-appearance: none;
+            border: none;
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            overflow: hidden;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        input[type="color"]::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input[type="color"]::-webkit-color-swatch {
+            border: none;
+        }
+
+        input[type="range"] {
+            accent-color: #3b82f6;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+
+<body class="flex flex-col h-screen select-none">
+
+    <!-- Hidden div to force font loading -->
+    <div style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Inter'">.
+    </div>
+    <div
+        style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Roboto Mono'">
+        .</div>
+    <div
+        style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Open Sans'">
+        .</div>
+    <div style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Lato'">.
+    </div>
+    <div
+        style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Montserrat'">
+        .</div>
+    <div style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Oswald'">.
+    </div>
+    <div
+        style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Playfair Display'">
+        .</div>
+    <div style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Lobster'">.
+    </div>
+    <div style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Pacifico'">
+        .</div>
+    <div
+        style="visibility: hidden; position: absolute; height: 0; width: 0; overflow: hidden; font-family: 'Dancing Script'">
+        .</div>
+
+    <!-- Top Menu Bar -->
+    <div class="h-10 bg-gray-900 border-b border-gray-700 flex items-center px-4 space-x-4 text-sm z-20">
+        <div class="font-bold text-blue-400 mr-4"><i class="fas fa-layer-group"></i> WebPhoto</div>
+
+        <div class="relative group cursor-pointer">
+            <span class="hover:text-white">File</span>
+            <div
+                class="absolute top-full left-0 bg-gray-800 border border-gray-700 shadow-xl rounded-b hidden group-hover:block min-w-[150px] z-50">
+                <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer" onclick="app.showNewDialog()">New Project</div>
+                <label class="px-4 py-2 hover:bg-gray-700 cursor-pointer block">
+                    Open Image <input type="file" class="hidden" id="fileInput" accept="image/*"
+                        onchange="app.handleFileSelect(event)">
+                </label>
+                <div class="border-t border-gray-700 my-1"></div>
+                <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer" onclick="app.saveProject()">Save Project (.json)
+                </div>
+                <label class="px-4 py-2 hover:bg-gray-700 cursor-pointer block">
+                    Load Project (.json) <input type="file" class="hidden" id="jsonInput" accept=".json"
+                        onchange="app.loadProject(event)">
+                </label>
+                <div class="border-t border-gray-700 my-1"></div>
+                <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer" onclick="app.exportImage()">Export as PNG</div>
+            </div>
+        </div>
+
+        <div class="relative group cursor-pointer">
+            <span class="hover:text-white">Edit</span>
+            <div
+                class="absolute top-full left-0 bg-gray-800 border border-gray-700 shadow-xl rounded-b hidden group-hover:block min-w-[150px] z-50">
+                <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer flex justify-between" onclick="app.undo()">
+                    <span>Undo</span> <span class="text-gray-500 text-xs">Ctrl+Z</span></div>
+                <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer" onclick="app.clearCanvas()">Clear Canvas</div>
+            </div>
+        </div>
+
+        <div class="relative group cursor-pointer">
+            <span class="hover:text-white">Image</span>
+            <div
+                class="absolute top-full left-0 bg-gray-800 border border-gray-700 shadow-xl rounded-b hidden group-hover:block min-w-[150px] z-50">
+                <div class="px-4 py-2 hover:bg-gray-700 cursor-pointer" onclick="app.showResizeDialog()">Resize Canvas
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Status -->
+        <div class="flex-grow text-right text-xs text-gray-500 flex items-center justify-end space-x-4" id="statusMsg">
+            <span id="toolStatus">Ready</span>
+            <div class="flex items-center space-x-2 border-l border-gray-700 pl-4">
+                <button onclick="app.adjustZoom(-0.1)" class="hover:text-white w-5 text-center"><i
+                        class="fas fa-minus"></i></button>
+                <span id="zoomLabel" class="w-12 text-center text-gray-300">100%</span>
+                <button onclick="app.adjustZoom(0.1)" class="hover:text-white w-5 text-center"><i
+                        class="fas fa-plus"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Bar -->
+    <div class="h-12 bg-gray-800 border-b border-gray-700 flex items-center px-4 space-x-4 text-sm overflow-x-auto scrollbar-hide"
+        id="propertiesPanel">
+        <!-- Dynamic content based on selected tool/layer -->
+        <span class="text-gray-500 italic">Select a tool or layer to edit properties</span>
+    </div>
+
+    <!-- Main Workspace -->
+    <div class="flex-grow flex overflow-hidden">
+
+        <!-- Toolbar (Left) -->
+        <div class="w-14 bg-gray-800 border-r border-gray-700 flex flex-col items-center py-4 space-y-2 z-10">
+            <button class="tool-btn w-10 h-10 rounded hover:bg-gray-700 flex items-center justify-center active"
+                onclick="app.setTool('move')" title="Move (V)">
+                <i class="fas fa-arrows-alt"></i>
+            </button>
+            <button class="tool-btn w-10 h-10 rounded hover:bg-gray-700 flex items-center justify-center"
+                onclick="app.setTool('select')" title="Transform (T)">
+                <i class="fas fa-expand-alt"></i>
+            </button>
+            <div class="w-8 border-b border-gray-700 my-1"></div>
+            <button class="tool-btn w-10 h-10 rounded hover:bg-gray-700 flex items-center justify-center"
+                onclick="app.setTool('text')" title="Text Tool (T)">
+                <i class="fas fa-font"></i>
+            </button>
+            <button class="tool-btn w-10 h-10 rounded hover:bg-gray-700 flex items-center justify-center"
+                onclick="app.setTool('rect')" title="Rectangle">
+                <i class="far fa-square"></i>
+            </button>
+            <button class="tool-btn w-10 h-10 rounded hover:bg-gray-700 flex items-center justify-center"
+                onclick="app.setTool('circle')" title="Circle">
+                <i class="far fa-circle"></i>
+            </button>
+            <button class="tool-btn w-10 h-10 rounded hover:bg-gray-700 flex items-center justify-center"
+                onclick="app.setTool('brush')" title="Brush">
+                <i class="fas fa-paint-brush"></i>
+            </button>
+        </div>
+
+        <!-- Canvas Area (Center) -->
+        <div class="flex-grow bg-gray-900 relative overflow-auto flex items-center justify-center p-8"
+            id="canvasWrapper">
+            <canvas id="mainCanvas" class="canvas-container"></canvas>
+        </div>
+
+        <!-- Panels (Right) -->
+        <div class="w-72 bg-gray-800 border-l border-gray-700 flex flex-col z-10">
+
+            <!-- Layers Panel -->
+            <div class="flex-grow flex flex-col min-h-0">
+                <div
+                    class="px-3 py-2 bg-gray-700 text-xs font-bold uppercase tracking-wider flex justify-between items-center">
+                    Layers
+                    <div class="space-x-1 flex items-center">
+                        <button class="hover:text-white px-1" onclick="app.groupSelectedLayers()"
+                            title="Group Selected"><i class="fas fa-folder"></i></button>
+                        <button class="hover:text-white px-1" onclick="app.addLayer('empty')" title="New Layer"><i
+                                class="fas fa-plus"></i></button>
+                        <button class="hover:text-white px-1" onclick="app.duplicateLayer()"
+                            title="Duplicate Layer (Ctrl+J)"><i class="fas fa-copy"></i></button>
+                        <button class="hover:text-red-400 px-1" onclick="app.deleteLayer()" title="Delete Layer"><i
+                                class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+                <div class="overflow-y-auto flex-grow p-2 space-y-1" id="layersList">
+                    <!-- Layer Items go here -->
+                </div>
+            </div>
+
+            <!-- Layer Properties / Blending -->
+            <div class="h-1/3 border-t border-gray-700 flex flex-col p-3 space-y-3 bg-gray-800">
+                <div class="text-xs font-bold uppercase tracking-wider text-gray-400">Blending & Filters</div>
+
+                <div class="flex items-center justify-between text-xs">
+                    <span>Opacity</span>
+                    <input type="range" min="0" max="100" value="100" class="w-32" id="opacitySlider"
+                        oninput="app.updateLayerProp('opacity', this.value/100)">
+                </div>
+
+                <div class="flex items-center justify-between text-xs">
+                    <span>Mode</span>
+                    <select class="bg-gray-700 border-none rounded text-xs px-2 py-1 w-32 outline-none" id="blendMode"
+                        onchange="app.updateLayerProp('blendMode', this.value)">
+                        <option value="source-over">Normal</option>
+                        <option value="multiply">Multiply</option>
+                        <option value="screen">Screen</option>
+                        <option value="overlay">Overlay</option>
+                        <option value="darken">Darken</option>
+                        <option value="lighten">Lighten</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 text-xs pt-2 border-t border-gray-700">
+                    <div>
+                        <label>Blur (px)</label>
+                        <input type="number" class="w-full bg-gray-900 border border-gray-600 rounded px-1" value="0"
+                            oninput="app.updateFilter('blur', this.value)">
+                    </div>
+                    <div>
+                        <label>Brightness (%)</label>
+                        <input type="number" class="w-full bg-gray-900 border border-gray-600 rounded px-1" value="100"
+                            oninput="app.updateFilter('brightness', this.value)">
+                    </div>
+                    <div>
+                        <label>Contrast (%)</label>
+                        <input type="number" class="w-full bg-gray-900 border border-gray-600 rounded px-1" value="100"
+                            oninput="app.updateFilter('contrast', this.value)">
+                    </div>
+                    <div>
+                        <label>Hue (deg)</label>
+                        <input type="number" class="w-full bg-gray-900 border border-gray-600 rounded px-1" value="0"
+                            oninput="app.updateFilter('hueRotate', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="newDialog" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded shadow-2xl p-6 w-80 border border-gray-600">
+            <h2 class="text-lg font-bold mb-4">New Project</h2>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Width (px)</label>
+                    <input type="number" id="newWidth" value="800"
+                        class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Height (px)</label>
+                    <input type="number" id="newHeight" value="600"
+                        class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                </div>
+                <div class="pt-4 flex justify-end space-x-2">
+                    <button onclick="document.getElementById('newDialog').classList.add('hidden')"
+                        class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Cancel</button>
+                    <button onclick="app.createNewProject()"
+                        class="px-3 py-1 bg-blue-600 rounded hover:bg-blue-500">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="textDialog" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded shadow-2xl p-6 w-96 border border-gray-600">
+            <h2 class="text-lg font-bold mb-4">Edit Text</h2>
+            <div class="text-xs text-gray-400 mb-2">Use Enter for new lines.</div>
+            <textarea id="textInput"
+                class="w-full h-40 bg-gray-900 border border-gray-600 rounded p-2 text-white mb-4 font-sans text-sm"></textarea>
+            <div class="flex justify-end space-x-2">
+                <button onclick="document.getElementById('textDialog').classList.add('hidden')"
+                    class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Cancel</button>
+                <button onclick="app.confirmText()"
+                    class="px-3 py-1 bg-blue-600 rounded hover:bg-blue-500">Apply</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="resizeDialog" class="fixed inset-0 modal-overlay hidden flex items-center justify-center z-50">
+        <div class="bg-gray-800 rounded shadow-2xl p-6 w-80 border border-gray-600">
+            <h2 class="text-lg font-bold mb-4">Resize Canvas</h2>
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Width (px)</label>
+                    <input type="number" id="resizeWidth"
+                        class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Height (px)</label>
+                    <input type="number" id="resizeHeight"
+                        class="w-full bg-gray-900 border border-gray-600 rounded p-2 text-white">
+                </div>
+                <div class="pt-4 flex justify-end space-x-2">
+                    <button onclick="document.getElementById('resizeDialog').classList.add('hidden')"
+                        class="px-3 py-1 bg-gray-700 rounded hover:bg-gray-600">Cancel</button>
+                    <button onclick="app.confirmCanvasResize()"
+                        class="px-3 py-1 bg-blue-600 rounded hover:bg-blue-500">Resize</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay"
+        class="fixed inset-0 bg-black bg-opacity-80 hidden flex flex-col items-center justify-center z-[100]">
+        <div class="text-white text-xl font-bold mb-2">Processing...</div>
+        <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+
+    <script>
+        class Layer {
+            constructor(type, name, data = {}) {
+                this.id = data.id || Date.now() + Math.random();
+                this.type = type; // 'image', 'text', 'rect', 'circle', 'group', 'bg'
+                this.name = name;
+                this.visible = data.visible !== undefined ? data.visible : true;
+                this.opacity = data.opacity !== undefined ? data.opacity : 1.0;
+                this.blendMode = data.blendMode || 'source-over';
+                this.parentId = data.parentId || null;
+                this.selected = false; // Multi-select state
+
+                // Position & Transform
+                this.x = data.x || 0;
+                this.y = data.y || 0;
+                this.width = data.width || 0;
+                this.height = data.height || 0;
+                this.rotation = data.rotation || 0;
+
+                // Content Data
+                this.img = data.img || null; // For images
+                this.text = data.text || ""; // For text
+                this.color = data.color || "#3b82f6"; // Fill
+                this.strokeColor = data.strokeColor || "#ffffff";
+                this.strokeWidth = data.strokeWidth || 0;
+
+                // Font Data
+                this.fontSize = data.fontSize || 40;
+                this.fontFamily = data.fontFamily || "Inter";
+                this.fontWeight = data.fontWeight || "bold";
+                this.fontStyle = data.fontStyle || "normal"; // normal, italic
+
+                // Filters
+                this.filters = data.filters ? { ...data.filters } : {
+                    blur: 0,
+                    brightness: 100,
+                    contrast: 100,
+                    hueRotate: 0,
+                    saturate: 100
+                };
+            }
+        }
+
+        class App {
+            constructor() {
+                this.canvas = document.getElementById('mainCanvas');
+                // Removing 'willReadFrequently' as it may interfere with hardware filters in some browsers
+                this.ctx = this.canvas.getContext('2d');
+                this.layers = [];
+                this.activeLayerIndex = -1;
+                this.tool = 'move'; // move, select, text, rect, circle, brush
+                this.isDragging = false;
+                this.dragStart = { x: 0, y: 0 };
+                this.history = [];
+                this.historyIndex = -1;
+                this.zoom = 1.0;
+
+                this.clipboard = null;
+
+                // Interaction State
+                this.isDrawing = false;
+                this.currentDrawPath = [];
+
+                // Drag and Drop state
+                this.dragSrcIndex = -1;
+
+                // Robust Capability Check
+                const testCanvas = document.createElement('canvas');
+                const testCtx = testCanvas.getContext('2d');
+                testCtx.filter = 'blur(10px)';
+                this.filtersSupported = (testCtx.filter === 'blur(10px)');
+
+                this.init();
+            }
+
+            init() {
+                // Initial Canvas Setup
+                this.resizeCanvas(800, 600);
+                this.addLayer('bg', 'Background', { width: 800, height: 600, color: '#ffffff' });
+
+                // Only log warning to console instead of UI to avoid user confusion
+                if (!this.filtersSupported) {
+                    console.warn("Canvas Filters might not be supported in this environment.");
+                }
+
+                // Event Listeners
+                window.addEventListener('resize', () => this.centerCanvas());
+
+                // Zoom Scroll
+                document.getElementById('canvasWrapper').addEventListener('wheel', (e) => {
+                    if (e.ctrlKey) {
+                        e.preventDefault();
+                        this.adjustZoom(e.deltaY > 0 ? -0.1 : 0.1);
+                    }
+                });
+
+                // Canvas Events
+                this.canvas.addEventListener('mousedown', (e) => this.handleMouseDown(e));
+                window.addEventListener('mousemove', (e) => this.handleMouseMove(e));
+                window.addEventListener('mouseup', (e) => this.handleMouseUp(e));
+
+                // Keyboard
+                window.addEventListener('keydown', (e) => this.handleKeyDown(e));
+
+                // Paste
+                window.addEventListener('paste', (e) => this.handlePaste(e));
+
+                this.render();
+                this.updateUI();
+            }
+
+            // --- Core Layer Management ---
+
+            addLayer(type, name, data = {}) {
+                const newLayer = new Layer(type, name || `Layer ${this.layers.length + 1}`, data);
+
+                // Center new content if possible
+                if (type !== 'bg' && type !== 'group' && !data.x) {
+                    newLayer.x = this.canvas.width / 2 - (data.width || 100) / 2;
+                    newLayer.y = this.canvas.height / 2 - (data.height || 100) / 2;
+                }
+
+                this.layers.push(newLayer);
+                this.activeLayerIndex = this.layers.length - 1;
+                this.saveState();
+                this.render();
+                this.updateUI();
+                return newLayer;
+            }
+
+            duplicateLayer() {
+                if (this.activeLayerIndex < 0) return;
+
+                const source = this.layers[this.activeLayerIndex];
+                if (source.type === 'bg') return;
+
+                // Create new instance
+                const copy = new Layer(source.type, source.name + " Copy", {});
+
+                // Copy primitive properties
+                Object.assign(copy, source);
+
+                // Fix unique properties that shouldn't be shared
+                copy.id = Date.now() + Math.random();
+                copy.name = source.name + " Copy";
+                copy.filters = { ...source.filters }; // Deep copy filters object
+
+                // Offset position slightly for visual feedback
+                copy.x += 10;
+                copy.y += 10;
+
+                // Insert after current layer
+                this.layers.splice(this.activeLayerIndex + 1, 0, copy);
+                this.activeLayerIndex++; // Select the new layer
+
+                this.saveState();
+                this.render();
+                this.updateUI();
+            }
+
+            deleteLayer() {
+                if (this.activeLayerIndex >= 0 && this.layers.length > 0) {
+                    const layer = this.layers[this.activeLayerIndex];
+                    if (layer.type === 'bg') return; // Protect bg
+
+                    // If it's a group, we might want to delete children or move them out. 
+                    // For simplicity, we delete children too.
+                    if (layer.type === 'group') {
+                        this.layers = this.layers.filter(l => l.parentId !== layer.id);
+                    }
+
+                    this.layers.splice(this.activeLayerIndex, 1);
+                    this.activeLayerIndex = Math.max(0, this.layers.length - 1);
+                    if (this.layers.length === 0) this.activeLayerIndex = -1;
+                    this.saveState();
+                    this.render();
+                    this.updateUI();
+                }
+            }
+
+            selectLayer(index) {
+                this.activeLayerIndex = index;
+                this.render();
+                this.updateUI();
+            }
+
+            toggleLayerSelection(index) {
+                this.layers[index].selected = !this.layers[index].selected;
+                this.updateUI();
+            }
+
+            groupSelectedLayers() {
+                const selectedLayers = this.layers.filter(l => l.selected);
+                if (selectedLayers.length === 0) return;
+
+                // Create Group Layer
+                // Insert it above the highest selected layer index
+                let insertIndex = -1;
+                this.layers.forEach((l, i) => {
+                    if (l.selected) insertIndex = Math.max(insertIndex, i);
+                });
+
+                const groupLayer = new Layer('group', 'Group', { x: 0, y: 0 });
+                this.layers.splice(insertIndex + 1, 0, groupLayer);
+
+                // Assign parentId
+                selectedLayers.forEach(l => {
+                    l.parentId = groupLayer.id;
+                    l.selected = false;
+                });
+
+                // Set Active
+                this.activeLayerIndex = this.layers.indexOf(groupLayer);
+
+                this.saveState();
+                this.render();
+                this.updateUI();
+            }
+
+            // --- JSON Save / Load ---
+
+            async saveProject() {
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+
+                try {
+                    // We need to convert images to Base64 to save them
+                    const serializableLayers = await Promise.all(this.layers.map(async (l) => {
+                        const copy = { ...l };
+                        if (l.type === 'image' && l.img) {
+                            copy.imgData = await this.imageToBase64(l.img);
+                            delete copy.img; // remove DOM element reference
+                        }
+                        return copy;
+                    }));
+
+                    const projectData = {
+                        width: this.canvas.width,
+                        height: this.canvas.height,
+                        layers: serializableLayers
+                    };
+
+                    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData));
+                    const downloadAnchorNode = document.createElement('a');
+                    downloadAnchorNode.setAttribute("href", dataStr);
+                    downloadAnchorNode.setAttribute("download", "project.json");
+                    document.body.appendChild(downloadAnchorNode);
+                    downloadAnchorNode.click();
+                    downloadAnchorNode.remove();
+                } catch (e) {
+                    console.error("Save failed", e);
+                    alert("Failed to save project.");
+                } finally {
+                    document.getElementById('loadingOverlay').classList.add('hidden');
+                }
+            }
+
+            loadProject(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                document.getElementById('loadingOverlay').classList.remove('hidden');
+                const reader = new FileReader();
+
+                reader.onload = async (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+
+                        // Restore Canvas
+                        this.resizeCanvas(data.width, data.height);
+
+                        // Restore Layers
+                        this.layers = [];
+                        for (const lData of data.layers) {
+                            const newLayer = new Layer(lData.type, lData.name, lData);
+                            Object.assign(newLayer, lData); // Copy all props back
+
+                            if (lData.type === 'image' && lData.imgData) {
+                                newLayer.img = await this.loadImage(lData.imgData);
+                            }
+                            this.layers.push(newLayer);
+                        }
+
+                        this.history = [];
+                        this.saveState();
+                        this.render();
+                        this.updateUI();
+                    } catch (err) {
+                        console.error("Load failed", err);
+                        alert("Invalid project file.");
+                    } finally {
+                        document.getElementById('loadingOverlay').classList.add('hidden');
+                    }
+                };
+                reader.readAsText(file);
+                // Reset input
+                event.target.value = '';
+            }
+
+            imageToBase64(img) {
+                return new Promise((resolve) => {
+                    const c = document.createElement('canvas');
+                    c.width = img.width;
+                    c.height = img.height;
+                    const ctx = c.getContext('2d');
+                    ctx.drawImage(img, 0, 0);
+                    resolve(c.toDataURL());
+                });
+            }
+
+            loadImage(src) {
+                return new Promise((resolve, reject) => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = reject;
+                    img.src = src;
+                });
+            }
+
+            // --- Layer Drag & Drop Reordering ---
+
+            handleDragStart(e, index) {
+                this.dragSrcIndex = index;
+                e.dataTransfer.effectAllowed = 'move';
+                e.target.classList.add('dragging');
+            }
+
+            handleDragOver(e) {
+                if (e.preventDefault) e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                return false;
+            }
+
+            handleDrop(e, targetIndex) {
+                e.stopPropagation();
+                document.querySelectorAll('.layer-item').forEach(el => el.classList.remove('dragging'));
+
+                if (this.dragSrcIndex !== targetIndex && this.dragSrcIndex !== -1) {
+                    this.reorderLayers(this.dragSrcIndex, targetIndex);
+                }
+                this.dragSrcIndex = -1;
+                return false;
+            }
+
+            reorderLayers(fromIndex, toIndex) {
+                if (fromIndex === toIndex) return;
+                const [movedLayer] = this.layers.splice(fromIndex, 1);
+                this.layers.splice(toIndex, 0, movedLayer);
+
+                // Sync active index
+                if (this.activeLayerIndex === fromIndex) this.activeLayerIndex = toIndex;
+                else if (fromIndex < this.activeLayerIndex && toIndex >= this.activeLayerIndex) this.activeLayerIndex--;
+                else if (fromIndex > this.activeLayerIndex && toIndex <= this.activeLayerIndex) this.activeLayerIndex++;
+
+                this.saveState();
+                this.render();
+                this.updateUI();
+            }
+
+            // --- Properties & Styling ---
+
+            updateLayerProp(key, value) {
+                const layer = this.layers[this.activeLayerIndex];
+                if (!layer) return;
+
+                if (key === 'blendMode') layer.blendMode = value;
+                if (key === 'opacity') layer.opacity = value;
+                if (key === 'color') layer.color = value;
+                if (key === 'strokeColor') layer.strokeColor = value;
+                if (key === 'strokeWidth') layer.strokeWidth = parseInt(value);
+                if (key === 'fontSize') layer.fontSize = parseInt(value);
+                if (key === 'fontFamily') layer.fontFamily = value;
+                if (key === 'fontWeight') layer.fontWeight = value;
+                if (key === 'fontStyle') layer.fontStyle = value;
+
+                this.render();
+            }
+
+            updateFilter(key, value) {
+                const layer = this.layers[this.activeLayerIndex];
+                if (!layer) return;
+                layer.filters[key] = parseFloat(value);
+                this.render();
+            }
+
+            // --- Rendering ---
+
+            getMousePos(evt) {
+                const rect = this.canvas.getBoundingClientRect();
+                return {
+                    x: (evt.clientX - rect.left) * (this.canvas.width / rect.width),
+                    y: (evt.clientY - rect.top) * (this.canvas.height / rect.height)
+                };
+            }
+
+            applyFilters(ctx, layer) {
+                // Ensure context is cleared of previous filters first (handled by restore usually, but good practice)
+
+                const f = layer.filters;
+                const filters = [];
+
+                // Only append non-default values to improve performance and Safari compatibility
+                if (f.blur > 0) filters.push(`blur(${f.blur}px)`);
+                if (f.brightness !== 100) filters.push(`brightness(${f.brightness}%)`);
+                if (f.contrast !== 100) filters.push(`contrast(${f.contrast}%)`);
+                if (f.hueRotate !== 0) filters.push(`hue-rotate(${f.hueRotate}deg)`);
+                if (f.saturate !== 100) filters.push(`saturate(${f.saturate}%)`);
+
+                // Always set to ensure standard compliance
+                ctx.filter = filters.length > 0 ? filters.join(' ') : 'none';
+            }
+
+            render() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+                this.ctx.filter = 'none'; // Reset before new frame
+                this.ctx.fillStyle = '#1e1e1e';
+
+                // Create a map to check parent visibility easily
+                const layerMap = new Map(this.layers.map(l => [l.id, l]));
+
+                this.layers.forEach((layer, index) => {
+                    if (!layer.visible) return;
+                    if (layer.type === 'group') return; // Don't render groups themselves
+
+                    // Check if parent is hidden
+                    if (layer.parentId) {
+                        const parent = layerMap.get(layer.parentId);
+                        if (parent && !parent.visible) return;
+                    }
+
+                    this.ctx.save();
+                    this.ctx.globalAlpha = layer.opacity;
+                    this.ctx.globalCompositeOperation = layer.blendMode;
+                    this.applyFilters(this.ctx, layer);
+
+                    if (layer.type === 'bg') {
+                        this.ctx.fillStyle = layer.color;
+                        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+                    }
+                    else if (layer.type === 'image' && layer.img) {
+                        this.ctx.drawImage(layer.img, layer.x, layer.y, layer.width, layer.height);
+                    }
+                    else if (layer.type === 'rect') {
+                        this.ctx.fillStyle = layer.color;
+                        this.ctx.fillRect(layer.x, layer.y, layer.width, layer.height);
+                        if (layer.strokeWidth > 0) {
+                            this.ctx.lineWidth = layer.strokeWidth;
+                            this.ctx.strokeStyle = layer.strokeColor;
+                            this.ctx.strokeRect(layer.x, layer.y, layer.width, layer.height);
+                        }
+                    }
+                    else if (layer.type === 'circle') {
+                        this.ctx.beginPath();
+                        let radius = layer.width / 2;
+                        this.ctx.arc(layer.x + radius, layer.y + radius, radius, 0, 2 * Math.PI);
+                        this.ctx.fillStyle = layer.color;
+                        this.ctx.fill();
+                        if (layer.strokeWidth > 0) {
+                            this.ctx.lineWidth = layer.strokeWidth;
+                            this.ctx.strokeStyle = layer.strokeColor;
+                            this.ctx.stroke();
+                        }
+                    }
+                    else if (layer.type === 'text') {
+                        this.ctx.font = `${layer.fontStyle} ${layer.fontWeight} ${layer.fontSize}px "${layer.fontFamily}"`;
+                        this.ctx.fillStyle = layer.color;
+                        this.ctx.textBaseline = 'top';
+
+                        const lines = layer.text.split('\n');
+                        const lineHeight = layer.fontSize * 1.2;
+                        let maxWidth = 0;
+                        lines.forEach((line, i) => {
+                            this.ctx.fillText(line, layer.x, layer.y + (i * lineHeight));
+                            const w = this.ctx.measureText(line).width;
+                            if (w > maxWidth) maxWidth = w;
+                        });
+                        if (!this.mode || this.mode !== 'resizing') {
+                            layer.width = maxWidth;
+                            layer.height = lines.length * lineHeight;
+                        }
+                    }
+
+                    this.ctx.restore();
+
+                    // Selection Outline
+                    if (index === this.activeLayerIndex && this.tool !== 'brush') {
+                        this.ctx.save();
+                        this.ctx.strokeStyle = '#3b82f6';
+                        this.ctx.lineWidth = 1;
+                        this.ctx.setLineDash([5, 5]);
+                        this.ctx.strokeRect(layer.x - 2, layer.y - 2, layer.width + 4, layer.height + 4);
+
+                        // Resize handles
+                        if (this.tool === 'select') {
+                            this.ctx.fillStyle = '#3b82f6';
+                            this.ctx.setLineDash([]);
+                            const hSize = 8;
+                            const corners = [
+                                { x: layer.x - 4, y: layer.y - 4 }, // TL
+                                { x: layer.x + layer.width - 4, y: layer.y - 4 }, // TR
+                                { x: layer.x - 4, y: layer.y + layer.height - 4 }, // BL
+                                { x: layer.x + layer.width - 4, y: layer.y + layer.height - 4 } // BR
+                            ];
+                            corners.forEach(c => this.ctx.fillRect(c.x, c.y, hSize, hSize));
+                        }
+                        this.ctx.restore();
+                    }
+                });
+            }
+
+            // --- Interaction ---
+
+            handleMouseDown(e) {
+                const pos = this.getMousePos(e);
+                this.isDragging = true;
+                this.dragStart = pos;
+
+                const layer = this.layers[this.activeLayerIndex];
+
+                // Handle Resize Click
+                if (layer && this.tool === 'select') {
+                    const handles = {
+                        tl: [layer.x, layer.y],
+                        tr: [layer.x + layer.width, layer.y],
+                        bl: [layer.x, layer.y + layer.height],
+                        br: [layer.x + layer.width, layer.y + layer.height]
+                    };
+
+                    for (const [key, [hx, hy]] of Object.entries(handles)) {
+                        if (Math.abs(pos.x - hx) <= 8 && Math.abs(pos.y - hy) <= 8) {
+                            this.mode = 'resizing';
+                            this.resizeHandle = key;
+                            this.resizeStart = {
+                                x: pos.x, y: pos.y,
+                                lx: layer.x, ly: layer.y,
+                                lw: layer.width, lh: layer.height,
+                                fontSize: layer.fontSize,
+                                ratio: layer.width / layer.height || 1
+                            };
+                            return;
+                        }
+                    }
+                }
+
+                if (this.tool === 'brush') return;
+
+                if (this.tool === 'move' || this.tool === 'select') {
+                    // Reverse loop to select top-most
+                    let hit = false;
+                    for (let i = this.layers.length - 1; i >= 0; i--) {
+                        const l = this.layers[i];
+                        if (l.type === 'bg' || !l.visible) continue;
+
+                        // Check if in group and group is hidden
+                        if (l.parentId) {
+                            const parent = this.layers.find(p => p.id === l.parentId);
+                            if (parent && !parent.visible) continue;
+                        }
+
+                        if (pos.x >= l.x && pos.x <= l.x + l.width && pos.y >= l.y && pos.y <= l.y + l.height) {
+                            this.selectLayer(i);
+                            hit = true;
+                            this.mode = 'moving';
+                            break;
+                        }
+                    }
+                    if (!hit) this.activeLayerIndex = -1;
+                } else if (['rect', 'circle'].includes(this.tool)) {
+                    this.mode = 'creating';
+                    this.tempLayerStart = pos;
+                }
+
+                this.render();
+                this.updateUI();
+            }
+
+            handleMouseMove(e) {
+                if (!this.isDragging) return;
+                const pos = this.getMousePos(e);
+                const dx = pos.x - this.dragStart.x;
+                const dy = pos.y - this.dragStart.y;
+
+                const layer = this.layers[this.activeLayerIndex];
+
+                if (this.mode === 'moving' && layer) {
+                    if (layer.type === 'group') {
+                        // Move all children
+                        this.layers.forEach(l => {
+                            if (l.parentId === layer.id) {
+                                l.x += dx;
+                                l.y += dy;
+                            }
+                        });
+                    } else {
+                        layer.x += dx;
+                        layer.y += dy;
+                    }
+                    this.dragStart = pos;
+                    this.render();
+                } else if (this.mode === 'resizing' && layer) {
+                    const rDx = pos.x - this.resizeStart.x;
+                    const rDy = pos.y - this.resizeStart.y;
+
+                    let newX = this.resizeStart.lx;
+                    let newY = this.resizeStart.ly;
+                    let newW = this.resizeStart.lw;
+                    let newH = this.resizeStart.lh;
+
+                    switch (this.resizeHandle) {
+                        case 'br': newW += rDx; newH += rDy; break;
+                        case 'tr': newY += rDy; newW += rDx; newH -= rDy; break;
+                        case 'bl': newX += rDx; newW -= rDx; newH += rDy; break;
+                        case 'tl': newX += rDx; newY += rDy; newW -= rDx; newH -= rDy; break;
+                    }
+
+                    if (e.shiftKey) {
+                        if (newW / newH > this.resizeStart.ratio) {
+                            const oldNewW = newW;
+                            newW = newH * this.resizeStart.ratio;
+                            if (this.resizeHandle.includes('l')) newX += (oldNewW - newW);
+                        } else {
+                            const oldNewH = newH;
+                            newH = newW / this.resizeStart.ratio;
+                            if (this.resizeHandle.includes('t')) newY += (oldNewH - newH);
+                        }
+                    }
+
+                    if (newW < 5) newW = 5;
+                    if (newH < 5) newH = 5;
+
+                    if (layer.type === 'text') {
+                        const scale = newH / this.resizeStart.lh;
+                        layer.fontSize = this.resizeStart.fontSize * scale;
+                        layer.x = newX;
+                        layer.y = newY;
+                        layer.width = newW;
+                        layer.height = newH;
+                    } else {
+                        layer.x = newX;
+                        layer.y = newY;
+                        layer.width = newW;
+                        layer.height = newH;
+                    }
+
+                    this.render();
+                }
+            }
+
+            handleMouseUp(e) {
+                if (!this.isDragging) return;
+                this.isDragging = false;
+                const pos = this.getMousePos(e);
+
+                if (this.mode === 'creating') {
+                    const width = pos.x - this.dragStart.x;
+                    const height = pos.y - this.dragStart.y;
+
+                    if (Math.abs(width) > 5 && Math.abs(height) > 5) {
+                        const finalX = width < 0 ? pos.x : this.dragStart.x;
+                        const finalY = height < 0 ? pos.y : this.dragStart.y;
+                        const finalW = Math.abs(width);
+                        const finalH = Math.abs(height);
+
+                        if (this.tool === 'rect') {
+                            this.addLayer('rect', 'Rectangle', { x: finalX, y: finalY, width: finalW, height: finalH, color: '#3b82f6' });
+                        } else if (this.tool === 'circle') {
+                            const size = Math.max(finalW, finalH);
+                            this.addLayer('circle', 'Circle', { x: finalX, y: finalY, width: size, height: size, color: '#ef4444' });
+                        }
+                        this.setTool('move');
+                    }
+                } else if (this.tool === 'text') {
+                    this.showTextDialog();
+                }
+
+                if (this.mode === 'moving' || this.mode === 'resizing' || this.mode === 'creating') {
+                    this.saveState();
+                }
+
+                this.mode = null;
+                this.render();
+                this.updateUI();
+            }
+
+            // --- Tooling ---
+
+            setTool(toolName) {
+                this.tool = toolName;
+                document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+
+                const buttons = document.querySelectorAll('.tool-btn');
+                buttons.forEach(btn => {
+                    if (btn.getAttribute('onclick').includes(toolName)) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                let msg = toolName === 'text' && this.activeLayerIndex === -1
+                    ? "Click on canvas to add text"
+                    : `Tool: ${toolName.charAt(0).toUpperCase() + toolName.slice(1)}`;
+
+                if (!this.filtersSupported) {
+                    msg += " (Filters Unsupported)";
+                    document.getElementById('toolStatus').classList.add('text-red-400');
+                } else {
+                    document.getElementById('toolStatus').classList.remove('text-red-400');
+                }
+
+                document.getElementById('toolStatus').innerText = msg;
+
+                this.render();
+                this.updateUI();
+            }
+
+            showTextDialog(existingText = "") {
+                const dialog = document.getElementById('textDialog');
+                const input = document.getElementById('textInput');
+                input.value = existingText;
+                dialog.classList.remove('hidden');
+                input.focus();
+
+                if (this.activeLayerIndex > -1 && this.layers[this.activeLayerIndex].type === 'text') {
+                    input.value = this.layers[this.activeLayerIndex].text;
+                    this.isEditingText = true;
+                } else {
+                    this.isEditingText = false;
+                }
+            }
+
+            confirmText() {
+                const text = document.getElementById('textInput').value;
+                document.getElementById('textDialog').classList.add('hidden');
+
+                if (!text) return;
+
+                if (this.isEditingText && this.activeLayerIndex > -1) {
+                    this.layers[this.activeLayerIndex].text = text;
+                } else {
+                    this.addLayer('text', 'Text Layer', { text: text, x: 100, y: 100, color: '#ffffff', fontSize: 40 });
+                }
+                this.setTool('move');
+                this.render();
+                this.saveState();
+            }
+
+            // --- Zoom & Canvas Operations ---
+
+            adjustZoom(delta) {
+                this.setZoom(this.zoom + delta);
+            }
+
+            setZoom(level) {
+                this.zoom = Math.max(0.1, Math.min(5, Number(level.toFixed(1))));
+                this.canvas.style.width = `${this.canvas.width * this.zoom}px`;
+                this.canvas.style.height = `${this.canvas.height * this.zoom}px`;
+                document.getElementById('zoomLabel').innerText = `${Math.round(this.zoom * 100)}%`;
+            }
+
+            showResizeDialog() {
+                document.getElementById('resizeWidth').value = this.canvas.width;
+                document.getElementById('resizeHeight').value = this.canvas.height;
+                document.getElementById('resizeDialog').classList.remove('hidden');
+            }
+
+            confirmCanvasResize() {
+                const w = parseInt(document.getElementById('resizeWidth').value);
+                const h = parseInt(document.getElementById('resizeHeight').value);
+
+                if (w && h) {
+                    this.resizeCanvas(w, h);
+                    document.getElementById('resizeDialog').classList.add('hidden');
+                    this.saveState();
+                }
+            }
+
+            resizeCanvas(w, h) {
+                if (w) this.canvas.width = w;
+                if (h) this.canvas.height = h;
+                this.setZoom(this.zoom);
+                this.centerCanvas();
+                this.render();
+            }
+
+            centerCanvas() { }
+
+            // --- File / Data Operations ---
+
+            handlePaste(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+                for (let index in items) {
+                    const item = items[index];
+                    if (item.kind === 'file' && item.type.includes('image/')) {
+                        const blob = item.getAsFile();
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                let w = img.width;
+                                let h = img.height;
+                                if (w > this.canvas.width) {
+                                    const ratio = this.canvas.width / w;
+                                    w *= ratio;
+                                    h *= ratio;
+                                }
+                                this.addLayer('image', 'Pasted Image', { img: img, width: w, height: h });
+                            };
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(blob);
+                    }
+                }
+            }
+
+            handleFileSelect(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        if (this.layers.length <= 1 && this.layers[0].type === 'bg') {
+                            this.resizeCanvas(img.width, img.height);
+                        }
+                        this.addLayer('image', file.name, { img: img, width: img.width, height: img.height, x: 0, y: 0 });
+                    };
+                    img.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+
+            exportImage() {
+                const prevIndex = this.activeLayerIndex;
+                this.activeLayerIndex = -1;
+                this.render();
+
+                const link = document.createElement('a');
+                link.download = 'design.png';
+                link.href = this.canvas.toDataURL();
+                link.click();
+
+                this.activeLayerIndex = prevIndex;
+                this.render();
+            }
+
+            createNewProject() {
+                const w = parseInt(document.getElementById('newWidth').value) || 800;
+                const h = parseInt(document.getElementById('newHeight').value) || 600;
+                document.getElementById('newDialog').classList.add('hidden');
+
+                this.layers = [];
+                this.resizeCanvas(w, h);
+                this.addLayer('bg', 'Background', { width: w, height: h, color: '#ffffff' });
+                this.history = [];
+                this.saveState();
+            }
+
+            showNewDialog() {
+                document.getElementById('newDialog').classList.remove('hidden');
+            }
+
+            clearCanvas() {
+                this.layers = this.layers.filter(l => l.type === 'bg');
+                this.render();
+                this.updateUI();
+                this.saveState();
+            }
+
+            handleKeyDown(e) {
+                if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+                if (e.ctrlKey || e.metaKey) {
+                    if (e.key === 'z') {
+                        e.preventDefault();
+                        this.undo();
+                    }
+                    if (e.key === 'j') {
+                        e.preventDefault();
+                        this.duplicateLayer();
+                    }
+                    if (e.key === 's') {
+                        e.preventDefault();
+                        this.saveProject();
+                    }
+                }
+
+                if (e.key === 'Delete') {
+                    if (this.activeLayerIndex > 0) this.deleteLayer();
+                }
+
+                if (e.key === 'v') this.setTool('move');
+                if (e.key === 't') this.setTool('text');
+            }
+
+            // --- History System ---
+
+            saveState() {
+                if (this.historyIndex < this.history.length - 1) {
+                    this.history = this.history.slice(0, this.historyIndex + 1);
+                }
+
+                const state = this.layers.map(l => {
+                    const clone = { ...l };
+                    clone.filters = { ...l.filters };
+                    return clone;
+                });
+
+                this.history.push(state);
+                if (this.history.length > 20) this.history.shift();
+                else this.historyIndex++;
+            }
+
+            undo() {
+                if (this.historyIndex > 0) {
+                    this.historyIndex--;
+                    const state = this.history[this.historyIndex];
+                    this.layers = state.map(s => {
+                        const layer = new Layer(s.type, s.name, s);
+                        Object.assign(layer, s);
+                        return layer;
+                    });
+
+                    this.activeLayerIndex = -1;
+                    this.render();
+                    this.updateUI();
+                }
+            }
+
+            // --- UI Updates ---
+
+            updateUI() {
+                const list = document.getElementById('layersList');
+                list.innerHTML = '';
+
+                for (let i = this.layers.length - 1; i >= 0; i--) {
+                    const l = this.layers[i];
+                    const div = document.createElement('div');
+
+                    // Add drag attributes
+                    div.draggable = true;
+                    div.ondragstart = (e) => this.handleDragStart(e, i);
+                    div.ondragover = (e) => this.handleDragOver(e);
+                    div.ondrop = (e) => this.handleDrop(e, i);
+
+                    const isChild = !!l.parentId;
+                    const childClass = isChild ? 'layer-child' : '';
+
+                    div.className = `layer-item flex items-center justify-between p-2 rounded cursor-pointer text-sm mb-1 ${childClass} ${i === this.activeLayerIndex ? 'active' : 'hover:bg-gray-700'}`;
+
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-2 overflow-hidden pointer-events-none">
+                            ${l.type !== 'bg' ?
+                            `<input type="checkbox" onclick="event.stopPropagation(); app.toggleLayerSelection(${i})" ${l.selected ? 'checked' : ''} class="pointer-events-auto h-3 w-3 rounded border-gray-500 bg-gray-700">`
+                            : ''}
+                            <i class="fas ${this.getIconForLayer(l.type)} text-gray-400 w-4"></i>
+                            <span class="truncate select-none">${l.name}</span>
+                        </div>
+                        <div class="flex space-x-1">
+                            <button onclick="event.stopPropagation(); app.toggleVis(${i})" class="text-gray-500 hover:text-white"><i class="fas ${l.visible ? 'fa-eye' : 'fa-eye-slash'}"></i></button>
+                        </div>
+                    `;
+                    div.onclick = () => this.selectLayer(i);
+                    list.appendChild(div);
+                }
+
+                // Properties Panel
+                const props = document.getElementById('propertiesPanel');
+                const layer = this.layers[this.activeLayerIndex];
+
+                if (!layer) {
+                    props.innerHTML = '<span class="text-gray-500 italic">Select a tool or layer</span>';
+                    return;
+                }
+
+                let html = '';
+
+                html += `
+                    <div class="flex items-center space-x-2 border-r border-gray-600 pr-3 mr-3 flex-shrink-0">
+                        <span class="text-xs text-gray-400">X</span> <input class="bg-gray-700 w-12 text-xs rounded border-none p-1 text-white" type="number" value="${Math.round(layer.x)}" onchange="app.updateLayerProp('x', this.value)">
+                        <span class="text-xs text-gray-400">Y</span> <input class="bg-gray-700 w-12 text-xs rounded border-none p-1 text-white" type="number" value="${Math.round(layer.y)}" onchange="app.updateLayerProp('y', this.value)">
+                    </div>
+                `;
+
+                if (layer.type === 'text') {
+                    html += `
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <label class="text-xs text-gray-400">Color:</label>
+                            <input type="color" value="${layer.color}" oninput="app.updateLayerProp('color', this.value)" title="Text Color">
+                            
+                            <select class="bg-gray-700 text-xs rounded p-1 outline-none text-white w-32" onchange="app.updateLayerProp('fontFamily', this.value)">
+                                <option value="Inter" ${layer.fontFamily === 'Inter' ? 'selected' : ''}>Inter</option>
+                                <option value="Roboto Mono" ${layer.fontFamily === 'Roboto Mono' ? 'selected' : ''}>Roboto Mono</option>
+                                <option value="Open Sans" ${layer.fontFamily === 'Open Sans' ? 'selected' : ''}>Open Sans</option>
+                                <option value="Lato" ${layer.fontFamily === 'Lato' ? 'selected' : ''}>Lato</option>
+                                <option value="Montserrat" ${layer.fontFamily === 'Montserrat' ? 'selected' : ''}>Montserrat</option>
+                                <option value="Oswald" ${layer.fontFamily === 'Oswald' ? 'selected' : ''}>Oswald</option>
+                                <option value="Playfair Display" ${layer.fontFamily === 'Playfair Display' ? 'selected' : ''}>Playfair</option>
+                                <option value="Lobster" ${layer.fontFamily === 'Lobster' ? 'selected' : ''}>Lobster</option>
+                                <option value="Pacifico" ${layer.fontFamily === 'Pacifico' ? 'selected' : ''}>Pacifico</option>
+                                <option value="Dancing Script" ${layer.fontFamily === 'Dancing Script' ? 'selected' : ''}>Dancing Script</option>
+                                <option value="sans-serif" ${layer.fontFamily === 'sans-serif' ? 'selected' : ''}>System Sans</option>
+                                <option value="serif" ${layer.fontFamily === 'serif' ? 'selected' : ''}>System Serif</option>
+                            </select>
+
+                            <input type="number" class="bg-gray-700 w-12 text-xs rounded p-1 text-white" value="${layer.fontSize}" oninput="app.updateLayerProp('fontSize', this.value)"> <span class="text-xs">px</span>
+                            
+                            <select class="bg-gray-700 text-xs rounded p-1 outline-none text-white" onchange="app.updateLayerProp('fontWeight', this.value)">
+                                <option value="normal" ${layer.fontWeight === 'normal' ? 'selected' : ''}>Normal</option>
+                                <option value="bold" ${layer.fontWeight === 'bold' ? 'selected' : ''}>Bold</option>
+                            </select>
+                            
+                            <button class="bg-gray-700 px-2 py-1 rounded hover:bg-gray-600 text-xs text-white" onclick="app.showTextDialog()">Edit Text</button>
+                        </div>
+                    `;
+                } else if (layer.type === 'rect' || layer.type === 'circle' || layer.type === 'bg') {
+                    html += `
+                        <div class="flex items-center space-x-2 flex-shrink-0">
+                            <span class="text-xs">Fill:</span> <input type="color" value="${layer.color}" oninput="app.updateLayerProp('color', this.value)">
+                            ${layer.type !== 'bg' ? `
+                                <span class="text-xs ml-2">Stroke:</span> <input type="color" value="${layer.strokeColor}" oninput="app.updateLayerProp('strokeColor', this.value)">
+                                <input type="number" class="bg-gray-700 w-10 text-xs rounded p-1 text-white" value="${layer.strokeWidth}" oninput="app.updateLayerProp('strokeWidth', this.value)"> <span class="text-xs">px</span>
+                            ` : ''}
+                        </div>
+                    `;
+                }
+
+                props.innerHTML = html;
+                document.getElementById('opacitySlider').value = layer.opacity * 100;
+                document.getElementById('blendMode').value = layer.blendMode;
+            }
+
+            toggleVis(index) {
+                this.layers[index].visible = !this.layers[index].visible;
+                this.render();
+                this.updateUI();
+            }
+
+            getIconForLayer(type) {
+                switch (type) {
+                    case 'image': return 'fa-image';
+                    case 'text': return 'fa-font';
+                    case 'rect': return 'fa-square';
+                    case 'circle': return 'fa-circle';
+                    case 'bg': return 'fa-border-all';
+                    case 'group': return 'fa-folder';
+                    default: return 'fa-layer-group';
+                }
+            }
+        }
+
+        const app = new App();
+
+    </script>
+</body>
+
+</html>

@@ -111,6 +111,12 @@
             <span class="dimension-separator">×</span>
             <input type="number" id="canvasHeight" class="input-small" placeholder="H" min="1" max="10000" value="720">
         </div>
+
+        <!-- Background Color -->
+        <div class="toolbar-group">
+            <label style="margin-right: 8px; font-size: 14px;">Background:</label>
+            <input type="color" id="backgroundColor" value="#ffffff" onchange="updateBackgroundColor(this.value)" title="Background Color">
+        </div>
     </div>
 
     <!-- Main Content -->
