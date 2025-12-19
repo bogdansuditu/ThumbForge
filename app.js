@@ -230,20 +230,23 @@ function setupLayerLevelBlur() {
 
         // Override drawObject to apply ctx.filter
         fabric.Object.prototype.drawObject = function (ctx) {
-            // Context is already saved/restored by the caller (render)
+            // Apply blur using ctx.filter if needed
+            // We check directly for blurAmount on the object being drawn
+            const hasBlur = this.blurAmount && this.blurAmount > 0;
 
-            // Apply blur filter if this object has blurAmount
-            if (this.blurAmount && this.blurAmount > 0) {
+            if (hasBlur) {
                 ctx.filter = `blur(${this.blurAmount}px)`;
-            } else {
-                ctx.filter = 'none';
             }
 
-            // Call original draw method
-            originalDrawObject.call(this, ctx);
-
-            // Reset filter
-            ctx.filter = 'none';
+            try {
+                // Call original draw method
+                originalDrawObject.call(this, ctx);
+            } finally {
+                // Always reset filter
+                if (hasBlur) {
+                    ctx.filter = 'none';
+                }
+            }
         };
     } catch (error) {
         console.error('Error setting up layer-level blur:', error);
@@ -257,10 +260,13 @@ function updateBackgroundColor(color) {
     applyBackgroundColor();
 
     // Update toolbar input if it exists
+    // REMOVED as per user request
+    /*
     const toolbarInput = document.getElementById('backgroundColor');
     if (toolbarInput && document.activeElement !== toolbarInput) {
         toolbarInput.value = color;
     }
+    */
 
     // Update property panel inputs if they exist and are not focused
     if (backgroundSelected) {
@@ -422,19 +428,23 @@ function applyImageCornerRadius(img) {
     const height = img.height;
 
     // ClipPath for rounding corners (no stroke)
+    // Use standard approach: centered on object means negative top/left offset
     const clipPath = new fabric.Rect({
         left: -width / 2,
         top: -height / 2,
+        originX: 'left',
+        originY: 'top',
         width: width,
         height: height,
         rx: radius,
         ry: radius,
-        fill: 'transparent',
+        fill: '#000000',
         absolutePositioned: false
     });
 
     img.clipPath = clipPath;
     img.strokeWidth = 0;
+    img.objectCaching = false; // Disable caching to ensure clip updates render correctly
 
     // If there's a stroke, create a border overlay
     if (imgStrokeWidth > 0) {
@@ -1619,6 +1629,15 @@ function updateImageStroke(property, value) {
     saveState();
 }
 
+// Update Blur
+function updateBlur(value) {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || activeObj.isBackground) return;
+
+    applyBlur(activeObj, value);
+    saveState();
+}
+
 function applyBlur(obj, blurValue) {
     if (!obj) return;
 
@@ -1629,13 +1648,21 @@ function applyBlur(obj, blurValue) {
     // DISABLE object caching when blur is active so ctx.filter applies correctly
     // If we rely on cache, the filter is applied to the cached image which might be clipped
     // or not updated frequently enough.
-    obj.objectCaching = (blurValue === 0);
+
+    // Check if we have a corner radius (which requires caching disabled too)
+    const hasCornerRadius = (obj.type === 'image' && obj.cornerRadius && obj.cornerRadius > 0);
+
+    if (blurValue > 0 || hasCornerRadius) {
+        obj.objectCaching = false;
+    } else {
+        // Only re-enable caching if no blur AND no corner radius
+        obj.objectCaching = true; // Was originally just (blurValue === 0)
+    }
 
     // Force re-render to apply the new blur
+    obj.dirty = true;
     canvas.renderAll();
 }
-
-
 function createGlowOverlay(obj) {
     if (!obj.glow) return;
 
@@ -1686,6 +1713,7 @@ function createGlowOverlay(obj) {
         canvas.renderAll();
     });
 }
+
 
 function updateBlur(value) {
     const activeObj = canvas.getActiveObject();
