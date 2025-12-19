@@ -1969,15 +1969,32 @@ function duplicateLayer() {
     const activeObj = canvas.getActiveObject();
     if (!activeObj) return;
 
+    const customProps = ['name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'];
+
     activeObj.clone((cloned) => {
         cloned.set({
             left: cloned.left + 20,
             top: cloned.top + 20
         });
+
         canvas.add(cloned);
+
+        // Restore effects on the cloned object
+        if (cloned.type === 'image' && cloned.cornerRadius > 0) {
+            applyImageCornerRadius(cloned);
+        }
+
+        if (cloned.blurAmount > 0) {
+            applyBlur(cloned, cloned.blurAmount);
+        }
+
+        if (cloned.glow) {
+            createGlowOverlay(cloned);
+        }
+
         canvas.setActiveObject(cloned);
         canvas.renderAll();
-    });
+    }, customProps);
 }
 
 function bringToFront() {
@@ -2172,11 +2189,26 @@ function loadProject() {
 
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
+    // Safety check: Don't trigger if user is typing in an input, textarea, or contentEditable
+    const target = e.target;
+    if (target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.tagName === 'SELECT' ||
+        target.isContentEditable) {
+        return;
+    }
+
     const activeObj = canvas.getActiveObject();
 
     // Don't trigger shortcuts if editing text
     if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text') && activeObj.isEditing) {
         return;
+    }
+
+    // Backspace / Delete = Delete Layer
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+        e.preventDefault();
+        deleteLayer();
     }
 
     // Enter or Escape = Finish path
