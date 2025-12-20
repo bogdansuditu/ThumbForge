@@ -1,4 +1,40 @@
 // Canvas and state management
+const AVAILABLE_FONTS = [
+    'Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Impact', 'Comic Sans MS',
+    'Roboto', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Merriweather',
+    'Playfair Display', 'Ubuntu', 'Lobster'
+];
+
+function preloadFonts() {
+    // Create an invisible container for font preloading
+    const loaderDiv = document.createElement('div');
+    loaderDiv.style.cssText = 'position: absolute; left: -9999px; top: -9999px; visibility: hidden; pointer-events: none;';
+
+    AVAILABLE_FONTS.forEach(font => {
+        // Normal
+        const span = document.createElement('span');
+        span.textContent = 'Preload';
+        span.style.fontFamily = font;
+        loaderDiv.appendChild(span);
+
+        // Bold
+        const spanBold = document.createElement('span');
+        spanBold.textContent = 'Preload Bold';
+        spanBold.style.fontFamily = font;
+        spanBold.style.fontWeight = 'bold';
+        loaderDiv.appendChild(spanBold);
+
+        // Italic
+        const spanItalic = document.createElement('span');
+        spanItalic.textContent = 'Preload Italic';
+        spanItalic.style.fontFamily = font;
+        spanItalic.style.fontStyle = 'italic';
+        loaderDiv.appendChild(spanItalic);
+    });
+
+    document.body.appendChild(loaderDiv);
+}
+
 let canvas;
 let currentTool = 'select';
 let history = [];
@@ -16,6 +52,7 @@ let autoSaveTimeout = null;
 // Initialize canvas
 function initCanvas() {
     console.log('Initializing canvas...');
+    preloadFonts(); // Preload all fonts immediately
     const width = parseInt(document.getElementById('canvasWidth').value) || 1280;
     const height = parseInt(document.getElementById('canvasHeight').value) || 720;
 
@@ -58,13 +95,10 @@ function initCanvas() {
 
     // Keep image border overlays in sync
     canvas.on('object:moving', syncImageBorderOverlay);
+    // Keep image border overlays in sync
+    canvas.on('object:moving', syncImageBorderOverlay);
     canvas.on('object:rotating', syncImageBorderOverlay);
     canvas.on('object:scaling', syncImageBorderOverlay);
-
-    // Keep glow overlays in sync
-    canvas.on('object:moving', syncGlowOverlay);
-    canvas.on('object:rotating', syncGlowOverlay);
-    canvas.on('object:scaling', syncGlowOverlay);
 
     // Clean up overlays when object is removed
     canvas.on('object:removed', function (e) {
@@ -72,9 +106,7 @@ function initCanvas() {
         if (obj._borderOverlay && canvas.contains(obj._borderOverlay)) {
             canvas.remove(obj._borderOverlay);
         }
-        if (obj._glowOverlay && canvas.contains(obj._glowOverlay)) {
-            canvas.remove(obj._glowOverlay);
-        }
+
     });
     canvas.on('object:added', () => {
         updateLayersList();
@@ -114,7 +146,7 @@ function autoSave() {
                 backgroundColor: backgroundColor,
                 backgroundOpacity: backgroundOpacity,
                 timestamp: Date.now(),
-                objects: canvas.toJSON(['name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
+                objects: canvas.toJSON(['name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
             };
 
             localStorage.setItem('thumbforge-autosave', JSON.stringify(projectData));
@@ -167,6 +199,7 @@ function restoreAutoSave() {
                 if (obj.blurAmount > 0) {
                     applyBlur(obj, obj.blurAmount);
                 }
+
             });
 
             canvas.renderAll();
@@ -196,7 +229,7 @@ function saveImmediately() {
             backgroundColor: backgroundColor,
             backgroundOpacity: backgroundOpacity,
             timestamp: Date.now(),
-            objects: canvas.toJSON(['isBackground', 'name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
+            objects: canvas.toJSON(['isBackground', 'name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
         };
 
         localStorage.setItem('thumbforge-autosave', JSON.stringify(projectData));
@@ -230,12 +263,16 @@ function setupLayerLevelBlur() {
 
         // Override drawObject to apply ctx.filter
         fabric.Object.prototype.drawObject = function (ctx) {
-            // Apply blur using ctx.filter if needed
-            // We check directly for blurAmount on the object being drawn
-            const hasBlur = this.blurAmount && this.blurAmount > 0;
+            const filters = [];
 
-            if (hasBlur) {
-                ctx.filter = `blur(${this.blurAmount}px)`;
+            // 1. Blur
+            if (this.blurAmount > 0) {
+                filters.push(`blur(${this.blurAmount}px)`);
+            }
+
+            // Apply filters
+            if (filters.length > 0) {
+                ctx.filter = filters.join(' ');
             }
 
             try {
@@ -243,7 +280,7 @@ function setupLayerLevelBlur() {
                 originalDrawObject.call(this, ctx);
             } finally {
                 // Always reset filter
-                if (hasBlur) {
+                if (filters.length > 0) {
                     ctx.filter = 'none';
                 }
             }
@@ -376,23 +413,7 @@ function syncImageBorderOverlay(e) {
     canvas.renderAll();
 }
 
-function syncGlowOverlay(e) {
-    const obj = e.target;
-    if (!obj._glowOverlay) return;
 
-    const glowOverlay = obj._glowOverlay;
-
-    glowOverlay.set({
-        left: obj.left,
-        top: obj.top,
-        angle: obj.angle || 0,
-        scaleX: obj.scaleX,
-        scaleY: obj.scaleY
-    });
-
-    glowOverlay.setCoords();
-    canvas.renderAll();
-}
 
 // Apply corner radius to images using clipPath
 function applyImageCornerRadius(img) {
@@ -488,6 +509,8 @@ function applyImageCornerRadius(img) {
 
     img.dirty = true;
     canvas.renderAll();
+
+
 }
 
 // Tool Management
@@ -1116,20 +1139,27 @@ function updatePropertiesPanel() {
         html += `
             <div class="property-group">
                 <label class="property-label">Font Size</label>
-                <input type="number" class="property-input" value="${activeObj.fontSize}"
-                       onchange="updateObjectProperty('fontSize', parseInt(this.value))">
+                <input type="range" min="10" max="300" value="${activeObj.fontSize}"
+                       oninput="updateObjectProperty('fontSize', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
+                <span>${activeObj.fontSize}px</span>
             </div>
 
             <div class="property-group">
                 <label class="property-label">Font Family</label>
                 <select class="property-input" onchange="updateObjectProperty('fontFamily', this.value)">
-                    <option ${activeObj.fontFamily === 'Arial' ? 'selected' : ''}>Arial</option>
-                    <option ${activeObj.fontFamily === 'Helvetica' ? 'selected' : ''}>Helvetica</option>
-                    <option ${activeObj.fontFamily === 'Times New Roman' ? 'selected' : ''}>Times New Roman</option>
-                    <option ${activeObj.fontFamily === 'Courier New' ? 'selected' : ''}>Courier New</option>
-                    <option ${activeObj.fontFamily === 'Impact' ? 'selected' : ''}>Impact</option>
-                    <option ${activeObj.fontFamily === 'Comic Sans MS' ? 'selected' : ''}>Comic Sans MS</option>
+                    ${AVAILABLE_FONTS.map(font =>
+            `<option value="${font}" ${activeObj.fontFamily === font ? 'selected' : ''} style="font-family: '${font}'">${font}</option>`
+        ).join('')}
                 </select>
+            </div>
+
+            <div class="property-group style-controls" style="display: flex; gap: 8px;">
+                <button class="btn style-btn ${activeObj.fontWeight === 'bold' ? 'active' : ''}" 
+                        onclick="toggleFontWeight()" 
+                        style="flex: 1; font-weight: bold;">B</button>
+                <button class="btn style-btn ${activeObj.fontStyle === 'italic' ? 'active' : ''}" 
+                        onclick="toggleFontStyle()" 
+                        style="flex: 1; font-style: italic;">I</button>
             </div>
 
             <div class="property-group">
@@ -1195,36 +1225,7 @@ function updatePropertiesPanel() {
                 </div>
             ` : ''}
 
-            <div class="property-group">
-                <label class="property-label">Glow</label>
-                <button class="btn" onclick="toggleGlow()" style="width: 100%">
-                    ${activeObj.glow ? 'Remove Glow' : 'Add Glow'}
-                </button>
-            </div>
 
-            ${activeObj.glow ? `
-                <div class="property-group">
-                    <label class="property-label">Glow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.glow.blur || 0}"
-                           oninput="updateGlowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.glow.blur || 0}px</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Intensity</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow.intensity || 1) * 100}"
-                           oninput="updateGlowProperty('intensity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-                    <span>${Math.round((activeObj.glow.intensity || 1) * 100)}%</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.glow.color || 'rgba(255,255,255,0.8)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateGlowProperty('color', this.value)">
-                    </div>
-                </div>
-            ` : ''}
         `;
     }
 
@@ -1353,36 +1354,7 @@ function updatePropertiesPanel() {
                 </div>
             ` : ''}
 
-            <div class="property-group">
-                <label class="property-label">Glow</label>
-                <button class="btn" onclick="toggleGlow()" style="width: 100%">
-                    ${activeObj.glow ? 'Remove Glow' : 'Add Glow'}
-                </button>
-            </div>
 
-            ${activeObj.glow ? `
-                <div class="property-group">
-                    <label class="property-label">Glow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.glow.blur || 0}"
-                           oninput="updateGlowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.glow.blur || 0}px</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Intensity</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow.intensity || 1) * 100}"
-                           oninput="updateGlowProperty('intensity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-                    <span>${Math.round((activeObj.glow.intensity || 1) * 100)}%</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.glow.color || 'rgba(255,255,255,0.8)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateGlowProperty('color', this.value)">
-                    </div>
-                </div>
-            ` : ''}
         `;
     }
 
@@ -1442,36 +1414,7 @@ function updatePropertiesPanel() {
                 </div>
             ` : ''}
 
-            <div class="property-group">
-                <label class="property-label">Glow</label>
-                <button class="btn" onclick="toggleGlow()" style="width: 100%">
-                    ${activeObj.glow ? 'Remove Glow' : 'Add Glow'}
-                </button>
-            </div>
 
-            ${activeObj.glow ? `
-                <div class="property-group">
-                    <label class="property-label">Glow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.glow.blur || 0}"
-                           oninput="updateGlowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.glow.blur || 0}px</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Intensity</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow.intensity || 1) * 100}"
-                           oninput="updateGlowProperty('intensity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-                    <span>${Math.round((activeObj.glow.intensity || 1) * 100)}%</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.glow.color || 'rgba(255,255,255,0.8)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateGlowProperty('color', this.value)">
-                    </div>
-                </div>
-            ` : ''}
         `;
     }
 
@@ -1542,36 +1485,7 @@ function updatePropertiesPanel() {
                 </div>
             ` : ''}
 
-            <div class="property-group">
-                <label class="property-label">Glow</label>
-                <button class="btn" onclick="toggleGlow()" style="width: 100%">
-                    ${activeObj.glow ? 'Remove Glow' : 'Add Glow'}
-                </button>
-            </div>
 
-            ${activeObj.glow ? `
-                <div class="property-group">
-                    <label class="property-label">Glow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.glow.blur || 0}"
-                           oninput="updateGlowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.glow.blur || 0}px</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Intensity</label>
-                    <input type="range" min="0" max="100" value="${(activeObj.glow.intensity || 1) * 100}"
-                           oninput="updateGlowProperty('intensity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-                    <span>${Math.round((activeObj.glow.intensity || 1) * 100)}%</span>
-                </div>
-
-                <div class="property-group">
-                    <label class="property-label">Glow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.glow.color || 'rgba(255,255,255,0.8)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateGlowProperty('color', this.value)">
-                    </div>
-                </div>
-            ` : ''}
         `;
     }
 
@@ -1586,9 +1500,83 @@ function updateObjectProperty(property, value) {
     const activeObj = canvas.getActiveObject();
     if (!activeObj) return;
 
+    // Special handling for Font Family to ensure proper loading and measurement
+    if (property === 'fontFamily') {
+        const fontWeight = activeObj.fontWeight || 'normal';
+        const fontStyle = activeObj.fontStyle || 'normal';
+        const fontString = `${fontStyle} ${fontWeight} 12px "${value}"`;
+
+        // Try to load the font first to ensure correct measurement
+        document.fonts.load(fontString).then(() => {
+            activeObj.set(property, value);
+            if (activeObj.initDimensions) {
+                activeObj.initDimensions();
+            }
+            activeObj.setCoords();
+            activeObj.dirty = true;
+            canvas.requestRenderAll();
+            saveState();
+        }).catch(() => {
+            // Fallback if loading check fails
+            activeObj.set(property, value);
+            if (activeObj.initDimensions) {
+                activeObj.initDimensions();
+            }
+            activeObj.setCoords();
+            activeObj.dirty = true;
+            canvas.requestRenderAll();
+            saveState();
+        });
+        return; // Async handling took over
+    }
+
     activeObj.set(property, value);
+
+    // If it's a Text object and we changed properties that affect dimensions, recalculate
+    if ((activeObj.type === 'image' || activeObj.type === 'text' || activeObj.type === 'i-text') &&
+        (property === 'fontSize' || property === 'fontWeight' || property === 'fontStyle' || property === 'text')) {
+
+        // If we changed weight or style, we might need to wait for THAT variant to load too
+        if (property === 'fontWeight' || property === 'fontStyle') {
+            const fontFamily = activeObj.fontFamily;
+            const fontWeight = property === 'fontWeight' ? value : (activeObj.fontWeight || 'normal');
+            const fontStyle = property === 'fontStyle' ? value : (activeObj.fontStyle || 'normal');
+            const fontString = `${fontStyle} ${fontWeight} 12px "${fontFamily}"`;
+
+            document.fonts.load(fontString).then(() => {
+                if (activeObj.initDimensions) activeObj.initDimensions();
+                activeObj.setCoords();
+                canvas.requestRenderAll();
+            });
+        } else {
+            if (activeObj.initDimensions) activeObj.initDimensions();
+            activeObj.setCoords();
+        }
+    }
+
+    activeObj.dirty = true;
     canvas.renderAll();
     saveState();
+}
+
+function toggleFontWeight() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text')) return;
+
+    const newWeight = activeObj.fontWeight === 'bold' ? 'normal' : 'bold';
+    // Use updateObjectProperty to handle the font loading/dimension recalculation logic
+    updateObjectProperty('fontWeight', newWeight);
+    updatePropertiesPanel();
+}
+
+function toggleFontStyle() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text')) return;
+
+    const newStyle = activeObj.fontStyle === 'italic' ? 'normal' : 'italic';
+    // Use updateObjectProperty to handle the font loading/dimension recalculation logic
+    updateObjectProperty('fontStyle', newStyle);
+    updatePropertiesPanel();
 }
 
 function updateRectCorners(radius) {
@@ -1663,56 +1651,7 @@ function applyBlur(obj, blurValue) {
     obj.dirty = true;
     canvas.renderAll();
 }
-function createGlowOverlay(obj) {
-    if (!obj.glow) return;
 
-    // Remove existing overlay first
-    if (obj._glowOverlay && canvas.contains(obj._glowOverlay)) {
-        canvas.remove(obj._glowOverlay);
-        obj._glowOverlay = null;
-    }
-
-    const intensity = obj.glow.intensity !== undefined ? obj.glow.intensity : 1.0;
-    let glowColor = obj.glow.color || 'rgba(255,255,255,0.8)';
-
-    // Parse and apply intensity
-    const rgbaMatch = glowColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-    if (rgbaMatch) {
-        const r = rgbaMatch[1];
-        const g = rgbaMatch[2];
-        const b = rgbaMatch[3];
-        const baseAlpha = rgbaMatch[4] ? parseFloat(rgbaMatch[4]) : 1.0;
-        glowColor = `rgba(${r}, ${g}, ${b}, ${Math.min(1.0, baseAlpha * intensity)})`;
-    }
-
-    // Clone object and create glow version
-    obj.clone((cloned) => {
-        cloned.set({
-            left: obj.left,
-            top: obj.top,
-            angle: obj.angle || 0,
-            scaleX: obj.scaleX,
-            scaleY: obj.scaleY,
-            originX: obj.originX,
-            originY: obj.originY,
-            shadow: new fabric.Shadow({
-                color: glowColor,
-                blur: obj.glow.blur,
-                offsetX: 0,
-                offsetY: 0
-            }),
-            selectable: false,
-            evented: false,
-            opacity: 0.8,
-            temp: true // Mark as temporary so it doesn't show in layers list
-        });
-
-        obj._glowOverlay = cloned;
-        canvas.add(cloned);
-        cloned.moveTo(canvas.getObjects().indexOf(obj));
-        canvas.renderAll();
-    });
-}
 
 
 function updateBlur(value) {
@@ -1828,6 +1767,7 @@ function updatePolygonRadius(radius) {
     updatePolygonDimensions(activeObj, points);
     activeObj.set({ polygonRadius: radius });
 
+
     canvas.renderAll();
     saveState();
 }
@@ -1863,41 +1803,8 @@ function updateShadowProperty(property, value) {
     saveState();
 }
 
-function toggleGlow() {
-    const activeObj = canvas.getActiveObject();
-    if (!activeObj) return;
 
-    if (activeObj.glow) {
-        // Remove glow metadata and overlay
-        activeObj.glow = null;
-        if (activeObj._glowOverlay && canvas.contains(activeObj._glowOverlay)) {
-            canvas.remove(activeObj._glowOverlay);
-            activeObj._glowOverlay = null;
-        }
-    } else {
-        // Add glow metadata
-        activeObj.glow = {
-            blur: 20,
-            intensity: 1.0,
-            color: 'rgba(255,255,255,0.8)'
-        };
-        createGlowOverlay(activeObj);
-    }
 
-    canvas.renderAll();
-    updatePropertiesPanel();
-    saveState();
-}
-
-function updateGlowProperty(property, value) {
-    const activeObj = canvas.getActiveObject();
-    if (!activeObj || !activeObj.glow) return;
-
-    activeObj.glow[property] = value;
-    createGlowOverlay(activeObj);
-    canvas.renderAll();
-    saveState();
-}
 
 
 
@@ -1969,7 +1876,7 @@ function duplicateLayer() {
     const activeObj = canvas.getActiveObject();
     if (!activeObj) return;
 
-    const customProps = ['name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'];
+    const customProps = ['name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'];
 
     activeObj.clone((cloned) => {
         cloned.set({
@@ -1988,9 +1895,7 @@ function duplicateLayer() {
             applyBlur(cloned, cloned.blurAmount);
         }
 
-        if (cloned.glow) {
-            createGlowOverlay(cloned);
-        }
+
 
         canvas.setActiveObject(cloned);
         canvas.renderAll();
@@ -2104,7 +2009,7 @@ function saveProject() {
         canvasHeight: canvas.height,
         backgroundColor: backgroundColor,
         backgroundOpacity: backgroundOpacity,
-        objects: canvas.toJSON(['name', 'glow', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
+        objects: canvas.toJSON(['name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
     };
 
     const dataStr = JSON.stringify(projectData, null, 2);
