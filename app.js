@@ -285,6 +285,16 @@ function setupLayerLevelBlur() {
                 }
             }
         };
+
+        // Override getSvgStyles to add filter style for SVG export
+        const originalGetSvgStyles = fabric.Object.prototype.getSvgStyles;
+        fabric.Object.prototype.getSvgStyles = function () {
+            let style = originalGetSvgStyles.call(this);
+            if (this.blurAmount > 0) {
+                style += `filter: url(#blur-${this.blurAmount});`;
+            }
+            return style;
+        };
     } catch (error) {
         console.error('Error setting up layer-level blur:', error);
     }
@@ -1926,16 +1936,129 @@ function sendToBack() {
 
 // Export Functions
 function exportCanvas(format = 'png') {
-    const dataURL = canvas.toDataURL({
-        format: format,
-        quality: 1,
-        multiplier: 1
-    });
+    if (format === 'svg') {
+        const tempObjects = [];
 
-    const link = document.createElement('a');
-    link.download = `thumbforge-${Date.now()}.${format}`;
-    link.href = dataURL;
-    link.click();
+        // Add background rectangle if not transparent
+        if (backgroundOpacity > 0 && canvas.backgroundColor) {
+            const bgRect = new fabric.Rect({
+                left: 0,
+                top: 0,
+                width: canvas.width,
+                height: canvas.height,
+                fill: canvas.backgroundColor,
+                selectable: false,
+                evented: false,
+                isBackground: true // Tag it so we don't confuse it with user objects if something goes wrong
+            });
+            canvas.add(bgRect);
+            canvas.sendToBack(bgRect);
+            tempObjects.push(bgRect);
+        }
+
+        let svgData = canvas.toSVG({
+            viewBox: {
+                x: 0,
+                y: 0,
+                width: canvas.width,
+                height: canvas.height
+            }
+        });
+
+        // Collect unique blur amounts
+        const blurAmounts = new Set();
+        canvas.getObjects().forEach(obj => {
+            if (obj.blurAmount > 0) {
+                blurAmounts.add(obj.blurAmount);
+            }
+        });
+
+        // Generate filter definitions
+        let filtersParams = '';
+        blurAmounts.forEach(amount => {
+            filtersParams += `
+                <filter id="blur-${amount}">
+                    <feGaussianBlur in="SourceGraphic" stdDeviation="${amount}" />
+                </filter>`;
+        });
+
+        // Inject filters into SVG (prepend to <defs> or create it)
+        if (filtersParams) {
+            if (svgData.includes('<defs>')) {
+                svgData = svgData.replace('<defs>', `<defs>${filtersParams}`);
+            } else {
+                svgData = svgData.replace('>', `>\n<defs>${filtersParams}</defs>`);
+            }
+        }
+
+        // Cleanup temp objects
+        tempObjects.forEach(obj => canvas.remove(obj));
+
+        const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `thumbforge-${Date.now()}.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+    } else {
+        const dataURL = canvas.toDataURL({
+            format: format,
+            quality: 1,
+            multiplier: 1
+        });
+
+        const link = document.createElement('a');
+        link.download = `thumbforge-${Date.now()}.${format}`;
+        link.href = dataURL;
+        link.click();
+    }
+}
+
+// Import SVG
+function importSVG() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.svg';
+    input.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const svgContent = event.target.result;
+            fabric.loadSVGFromString(svgContent, (objects, options) => {
+                if (objects && objects.length > 0) {
+                    const loadedParams = objects.map(obj => {
+                        // Restore some critical properties if needed, or rely on defaults
+                        obj.set({
+                            objectCaching: true
+                        });
+                        return obj;
+                    });
+
+                    // Group imported objects to easily move them together initially
+                    const group = new fabric.Group(loadedParams);
+
+                    // Center the group
+                    group.set({
+                        left: canvas.width / 2,
+                        top: canvas.height / 2,
+                        originX: 'center',
+                        originY: 'center'
+                    });
+
+                    canvas.add(group);
+                    canvas.setActiveObject(group);
+                    canvas.renderAll();
+                    updateLayersList();
+                    saveState();
+                }
+            });
+        };
+        reader.readAsText(file);
+    };
+    input.click();
 }
 
 // Clear Canvas
@@ -2207,6 +2330,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('loadProject').addEventListener('click', loadProject);
     document.getElementById('export').addEventListener('click', () => exportCanvas('png'));
     document.getElementById('exportJPG').addEventListener('click', () => exportCanvas('jpeg'));
+    document.getElementById('exportSVG').addEventListener('click', () => exportCanvas('svg'));
+    document.getElementById('importSVG').addEventListener('click', importSVG);
     document.getElementById('canvasSize').addEventListener('change', changeCanvasSize);
 
     // Canvas dimension inputs
