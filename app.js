@@ -1172,6 +1172,39 @@ function updatePropertiesPanel() {
                         style="flex: 1; font-style: italic;">I</button>
             </div>
 
+            <div class="property-group style-controls" style="display: flex; gap: 8px;">
+                <button class="btn style-btn ${activeObj.textAlign === 'left' ? 'active' : ''}" 
+                        onclick="updateObjectProperty('textAlign', 'left')" 
+                        title="Align Left"
+                        style="flex: 1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="15" y2="12"></line>
+                        <line x1="3" y1="18" x2="19" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="btn style-btn ${activeObj.textAlign === 'center' ? 'active' : ''}" 
+                        onclick="updateObjectProperty('textAlign', 'center')" 
+                        title="Align Center"
+                        style="flex: 1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="6" y1="12" x2="18" y2="12"></line>
+                        <line x1="4" y1="18" x2="20" y2="18"></line>
+                    </svg>
+                </button>
+                <button class="btn style-btn ${activeObj.textAlign === 'right' ? 'active' : ''}" 
+                        onclick="updateObjectProperty('textAlign', 'right')" 
+                        title="Align Right"
+                        style="flex: 1;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="9" y1="12" x2="21" y2="12"></line>
+                        <line x1="5" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
             <div class="property-group">
                 <label class="property-label">Text Color</label>
                 <div class="color-input-group">
