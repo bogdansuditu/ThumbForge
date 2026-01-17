@@ -257,24 +257,7 @@ select {
 }
 
 /* Tool Categories (Popup) */
-.tool-dropdown {
-    position: relative;
-}
 
-.dropdown-content {
-    display: none;
-    position: absolute;
-    background: #252526;
-    border: 1px solid #111;
-    left: 36px;
-    top: 0;
-    padding: 2px;
-    z-index: 1000;
-}
-
-.tool-dropdown:hover .dropdown-content {
-    display: block;
-}
 
 /* Canvas Area */
 .canvas-area {

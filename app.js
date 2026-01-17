@@ -1230,16 +1230,22 @@ function updatePropertiesPanel() {
                 </div>
             </div>
 
-             <div class="property-group">
-                <label class="property-label">Stroke</label>
+            <div class="property-group">
+                <label class="property-label">Stroke Width</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
+                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
+                    <span hidden>${activeObj.strokeWidth || 0}px</span>
+                </div>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Stroke Color</label>
                  <div class="color-picker-row">
                     <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
                         <input type="color" value="${activeObj.stroke || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
-                     <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
-                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
-                   <span class="range-value" style="width: 20px">${activeObj.strokeWidth || 0}</span>
                 </div>
             </div>
 
@@ -1304,10 +1310,12 @@ function updatePropertiesPanel() {
     if (activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle' || activeObj.type === 'polygon') {
         html += `
             <div class="property-group">
-                <label class="property-label">Fill Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${activeObj.fill}"
-                           oninput="updateObjectProperty('fill', this.value)">
+                <label class="property-label">Fill</label>
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${activeObj.fill}">
+                        <input type="color" value="${activeObj.fill}"
+                               oninput="updateObjectProperty('fill', this.value)">
+                    </div>
                     <input type="text" class="property-input" value="${activeObj.fill}"
                            oninput="updateObjectProperty('fill', this.value)">
                 </div>
@@ -1318,15 +1326,17 @@ function updatePropertiesPanel() {
                 <div class="range-container">
                     <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
                            oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.strokeWidth || 0}px</span>
+                    <span hidden>${activeObj.strokeWidth || 0}px</span>
                 </div>
             </div>
 
             <div class="property-group">
                 <label class="property-label">Stroke Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${activeObj.stroke || '#000000'}"
-                           oninput="updateObjectProperty('stroke', this.value)">
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
+                        <input type="color" value="${activeObj.stroke || '#000000'}"
+                               oninput="updateObjectProperty('stroke', this.value)">
+                    </div>
                 </div>
             </div>
         `;
@@ -1416,7 +1426,7 @@ function updatePropertiesPanel() {
                 <label class="property-label">Shadow</label>
                 <div style="flex: 1">
                      ${activeObj.shadow ?
-                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove</button>` :
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove Shadow</button>` :
                 `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 })); updatePropertiesPanel();">Add Shadow</button>`
             }
                 </div>
@@ -1462,15 +1472,21 @@ function updatePropertiesPanel() {
     if (activeObj.type === 'line' || activeObj.type === 'polyline') {
         html += `
             <div class="property-group">
-                <label class="property-label">Stroke</label>
+                <label class="property-label">Stroke Width</label>
+                 <div class="range-container">
+                     <input type="range" min="1" max="20" value="${activeObj.strokeWidth || 3}"
+                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
+                   <span hidden>${activeObj.strokeWidth || 3}px</span>
+                </div>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Stroke Color</label>
                  <div class="color-picker-row">
                     <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
                         <input type="color" value="${activeObj.stroke || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
-                     <input type="range" min="1" max="20" value="${activeObj.strokeWidth || 3}"
-                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
-                   <span class="range-value" style="width: 20px">${activeObj.strokeWidth || 3}</span>
                 </div>
             </div>
 
@@ -1478,7 +1494,7 @@ function updatePropertiesPanel() {
                 <label class="property-label">Shadow</label>
                 <div style="flex: 1">
                     ${activeObj.shadow ?
-                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null)">Remove</button>` :
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null)">Remove Shadow</button>` :
                 `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 }))">Add Shadow</button>`
             }
                 </div>
@@ -1553,15 +1569,21 @@ function updatePropertiesPanel() {
             </div>
 
             <div class="property-group">
-                <label class="property-label">Stroke</label>
-                 <div class="color-picker-row">
-                    <div class="color-preview" style="background-color: ${imgStroke}">
-                        <input type="color" value="${imgStroke}"
-                               oninput="updateImageStroke('stroke', this.value)">
-                    </div>
+                <label class="property-label">Stroke Width</label>
+                 <div class="range-container">
                      <input type="range" min="0" max="20" value="${imgStrokeWidth}"
-                       oninput="updateImageStroke('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
-                   <span class="range-value" style="width: 20px">${imgStrokeWidth}</span>
+                       oninput="updateImageStroke('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
+                   <span hidden>${imgStrokeWidth}px</span>
+                </div>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Stroke Color</label>
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
+                        <input type="color" value="${activeObj.stroke || '#000000'}"
+                               oninput="updateObjectProperty('stroke', this.value)">
+                    </div>
                 </div>
             </div>
 
@@ -1582,7 +1604,7 @@ function updatePropertiesPanel() {
                 <label class="property-label">Shadow</label>
                 <div style="flex: 1">
                      ${activeObj.shadow ?
-                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove</button>` :
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove Shadow</button>` :
                 `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 })); updatePropertiesPanel();">Add Shadow</button>`
             }
                 </div>
@@ -2401,10 +2423,7 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'v') setTool('select');
         if (e.key === 'm') setTool('move');
         if (e.key === 't') setTool('text');
-        if (e.key === 's') {
-            e.preventDefault();
-            document.querySelector('[data-tool="shapes"]').click();
-        }
+
         if (e.key === 'l') setTool('line');
     }
 });
