@@ -48,6 +48,117 @@ let backgroundOpacity = 1.0; // Background opacity (0-1)
 let backgroundSelected = false; // Track if background is selected for properties panel
 let autoSaveTimeout = null;
 
+// Alignment Logic
+function checkSelectionForAlignment() {
+    const activeObj = canvas.getActiveObject();
+    const alignGroup = document.getElementById('alignGroup');
+
+    // Only show if multiple objects are selected (ActiveSelection)
+    // Note: Fabric's 'activeSelection' type indicates a multi-selection group
+    if (activeObj && activeObj.type === 'activeSelection' && activeObj.getObjects().length > 1) {
+        alignGroup.style.display = 'flex';
+    } else {
+        alignGroup.style.display = 'none';
+    }
+}
+
+function alignSelected(direction) {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || activeObj.type !== 'activeSelection') return;
+
+    const objects = activeObj.getObjects();
+    const groupWidth = activeObj.width;
+    const groupHeight = activeObj.height;
+
+    // In an ActiveSelection, objects' coordinates are relative to the center of the selection group.
+    // The group's center is (0,0) in its own coordinate space.
+    // Left edge limit is -groupWidth/2
+    // Right edge limit is groupWidth/2
+    // Top edge limit is -groupHeight/2
+    // Bottom edge limit is groupHeight/2
+
+    objects.forEach(obj => {
+        const objWidth = obj.width * obj.scaleX;
+        const objHeight = obj.height * obj.scaleY;
+
+        // Calculate offset from object's origin to its center
+        // Fabric objects might have originX='left' or 'center' (or 'right')
+        // We want to calculate the new position for the object's ORIGIN such that the object aligns correctly.
+
+        // Calculate Center Offset X (distance from originX to actual center)
+        let centerOffsetX = 0;
+        if (obj.originX === 'left') centerOffsetX = objWidth / 2;
+        else if (obj.originX === 'right') centerOffsetX = -objWidth / 2;
+        // if center, offset is 0
+
+        // Calculate Center Offset Y (distance from originY to actual center)
+        let centerOffsetY = 0;
+        if (obj.originY === 'top') centerOffsetY = objHeight / 2;
+        else if (obj.originY === 'bottom') centerOffsetY = -objHeight / 2;
+        // if center, offset is 0
+
+        // We calculate target based on OBJECT CENTER first, then adjust for origin
+        let newCenterX = obj.left + centerOffsetX; // Current center X relative to group
+        let newCenterY = obj.top + centerOffsetY;  // Current center Y relative to group
+
+        switch (direction) {
+            case 'left':
+                // Align object left edge to group left edge
+                // Group Left: -groupWidth / 2
+                // Object Center X should be: -groupWidth / 2 + objWidth / 2
+                newCenterX = -groupWidth / 2 + objWidth / 2;
+                break;
+            case 'centerH':
+                // Center X: 0
+                newCenterX = 0;
+                break;
+            case 'right':
+                // Align object right edge to group right edge
+                // Group Right: groupWidth / 2
+                // Object Center X should be: groupWidth / 2 - objWidth / 2
+                newCenterX = groupWidth / 2 - objWidth / 2;
+                break;
+            case 'top':
+                // Align object top edge to group top edge
+                // Group Top: -groupHeight / 2
+                // Object Center Y should be: -groupHeight / 2 + objHeight / 2
+                newCenterY = -groupHeight / 2 + objHeight / 2;
+                break;
+            case 'centerV':
+                // Center Y: 0
+                newCenterY = 0;
+                break;
+            case 'bottom':
+                // Align object bottom edge to group bottom edge
+                // Group Bottom: groupHeight / 2
+                // Object Center Y should be: groupHeight / 2 - objHeight / 2
+                newCenterY = groupHeight / 2 - objHeight / 2;
+                break;
+        }
+
+        // Convert back to Origin coordinates
+        if (direction === 'left' || direction === 'centerH' || direction === 'right') {
+            obj.set('left', newCenterX - centerOffsetX);
+        }
+        if (direction === 'top' || direction === 'centerV' || direction === 'bottom') {
+            obj.set('top', newCenterY - centerOffsetY);
+        }
+
+        // IMPORTANT: Mark object as dirty and update coords so the group/canvas knows 
+        // it needs to be redrawn at the new position immediately.
+        obj.setCoords();
+        obj.dirty = true;
+    });
+
+    // Notify the group that its objects have changed
+    activeObj.setCoords();
+    activeObj.dirty = true;
+
+    // Force a render of the canvas
+    canvas.renderAll();
+    saveState();
+}
+
 
 // Initialize canvas
 function initCanvas() {
@@ -2400,7 +2511,7 @@ document.addEventListener('keydown', (e) => {
         redo();
     }
 
-    // Ctrl/Cmd + D = Duplicate
+
     if ((e.ctrlKey || e.metaKey) && e.key === 'd') {
         e.preventDefault();
         duplicateLayer();
@@ -2494,6 +2605,19 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('bringToFront').addEventListener('click', bringToFront);
     document.getElementById('sendToBack').addEventListener('click', sendToBack);
 
+    // Alignment Actions
+    document.getElementById('alignLeft').addEventListener('click', () => alignSelected('left'));
+    document.getElementById('alignCenterH').addEventListener('click', () => alignSelected('centerH'));
+    document.getElementById('alignRight').addEventListener('click', () => alignSelected('right'));
+    document.getElementById('alignTop').addEventListener('click', () => alignSelected('top'));
+    document.getElementById('alignCenterV').addEventListener('click', () => alignSelected('centerV'));
+    document.getElementById('alignBottom').addEventListener('click', () => alignSelected('bottom'));
+
+    // Update alignment visibility on selection change
+    canvas.on('selection:created', checkSelectionForAlignment);
+    canvas.on('selection:updated', checkSelectionForAlignment);
+    canvas.on('selection:cleared', checkSelectionForAlignment);
+
     // Paste image from clipboard
     document.addEventListener('paste', (e) => {
         const items = e.clipboardData.items;
@@ -2527,12 +2651,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         applyImageCornerRadius(img);
                         canvas.setActiveObject(img);
                         canvas.renderAll();
+                        saveState(); // Save after paste
                     });
                 };
                 reader.readAsDataURL(blob);
             }
         }
     });
+
 
     // Save immediately before page unload (refresh, close, navigate away)
     window.addEventListener('beforeunload', (e) => {
