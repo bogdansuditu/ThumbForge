@@ -319,6 +319,12 @@ select {
     height: 30px;
 }
 
+#propertiesPanel .panel-header {
+    padding-bottom: 10px;
+    height: auto;
+    margin: 12px -10px 8px -10px;
+}
+
 .panel-header h3 {
     font-size: 11px;
     font-weight: 600;
@@ -443,6 +449,12 @@ select {
 }
 
 /* Updated Property Group for compact grid layout */
+.property-separator {
+    height: 1px;
+    background: #333;
+    margin: 12px 0 8px 0;
+}
+
 .property-group {
     margin-bottom: 8px;
     display: grid;

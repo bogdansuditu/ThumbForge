@@ -1142,15 +1142,6 @@ function updatePropertiesPanel() {
                 <span class="range-value">${Math.round((activeObj.opacity || 1) * 100)}%</span>
             </div>
         </div>
-
-        <div class="property-group">
-            <label class="property-label">Blur</label>
-            <div class="range-container">
-                <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
-                       oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
-                <span class="range-value">${activeObj.blurAmount || 0}%</span>
-            </div>
-        </div>
     `;
 
     // Text-specific properties
@@ -1252,6 +1243,19 @@ function updatePropertiesPanel() {
                 </div>
             </div>
 
+            <div class="panel-header">
+                <h3>Effects</h3>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Blur</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
+                           oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
+                    <span class="range-value">${activeObj.blurAmount || 0}%</span>
+                </div>
+            </div>
+
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <button class="btn" onclick="toggleShadow()" style="width: 100%">
@@ -1311,9 +1315,11 @@ function updatePropertiesPanel() {
 
             <div class="property-group">
                 <label class="property-label">Stroke Width</label>
-                <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
-                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                <span>${activeObj.strokeWidth || 0}px</span>
+                <div class="range-container">
+                    <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
+                           oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
+                    <span>${activeObj.strokeWidth || 0}px</span>
+                </div>
             </div>
 
             <div class="property-group">
@@ -1393,6 +1399,19 @@ function updatePropertiesPanel() {
         }
 
         html += `
+            <div class="panel-header">
+                <h3>Effects</h3>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Blur</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
+                           oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
+                    <span class="range-value">${activeObj.blurAmount || 0}%</span>
+                </div>
+            </div>
+
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <div style="flex: 1">
@@ -1466,6 +1485,19 @@ function updatePropertiesPanel() {
                 </div>
             </div>
 
+            <div class="panel-header">
+                <h3>Effects</h3>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Blur</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
+                           oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
+                    <span class="range-value">${activeObj.blurAmount || 0}%</span>
+                </div>
+            </div>
+
             ${activeObj.shadow ? `
                 <div class="property-group">
                     <label class="property-label">Shadow Blur</label>
@@ -1530,6 +1562,19 @@ function updatePropertiesPanel() {
                      <input type="range" min="0" max="20" value="${imgStrokeWidth}"
                        oninput="updateImageStroke('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
                    <span class="range-value" style="width: 20px">${imgStrokeWidth}</span>
+                </div>
+            </div>
+
+            <div class="panel-header">
+                <h3>Effects</h3>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Blur</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
+                           oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
+                    <span class="range-value">${activeObj.blurAmount || 0}%</span>
                 </div>
             </div>
 
