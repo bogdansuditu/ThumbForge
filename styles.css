@@ -617,3 +617,58 @@ input[type=number] {
     -moz-appearance: textfield;
     appearance: textfield;
 }
+
+/* Status Bar */
+.status-bar {
+    height: 30px;
+    background: #2d2d2d;
+    border-top: 1px solid #111;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    /* Right aligned */
+    padding: 0 10px;
+    flex-shrink: 0;
+    z-index: 100;
+}
+
+.zoom-controls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.zoom-input {
+    background: transparent;
+    border: none;
+    color: #aeaeae;
+    width: 45px;
+    text-align: center;
+    font-size: 11px;
+    outline: none;
+}
+
+.zoom-input:focus {
+    color: #fff;
+    background: #3e3e3e;
+    border-radius: 2px;
+}
+
+.status-bar .icon-btn {
+    width: 20px;
+    height: 20px;
+    padding: 3px;
+    color: #aeaeae;
+    border-radius: 3px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.status-bar .icon-btn:hover {
+    background: #3e3e3e;
+    color: #fff;
+}
