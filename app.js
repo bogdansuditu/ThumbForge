@@ -877,7 +877,7 @@ function updateLayersList() {
             <span class="layer-name">${name}</span>
             <div class="layer-controls">
                 <button class="layer-control-btn visibility-btn ${obj.visible !== false ? 'active' : ''}" title="Toggle Visibility">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         ${obj.visible !== false ?
                 '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>' :
                 '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>'
@@ -885,7 +885,7 @@ function updateLayersList() {
                     </svg>
                 </button>
                 <button class="layer-control-btn lock-btn ${obj.lockMovementX ? 'active' : ''}" title="Toggle Lock">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                         ${obj.lockMovementX ?
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/>' :
                 '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/>'
@@ -1045,33 +1045,34 @@ function handleDragEnd(e) {
 }
 
 function getLayerIcon(obj) {
-    const svgStyle = 'width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"';
+    const svgStyle = 'width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"';
 
     if (obj.isBackground) {
         return `<svg ${svgStyle}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
     }
     if (obj.type === 'i-text' || obj.type === 'text') {
-        return `<svg ${svgStyle}><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>`;
+        // Thinner, sans-serif T
+        return `<svg ${svgStyle}><path d="M5 4h14M12 4v16"/></svg>`;
     }
     if (obj.type === 'rect') {
         return `<svg ${svgStyle}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
     }
     if (obj.type === 'circle') {
-        return `<svg ${svgStyle}><circle cx="12" cy="12" r="10"/></svg>`;
+        return `<svg ${svgStyle}><circle cx="12" cy="12" r="9"/></svg>`;
     }
     if (obj.type === 'triangle') {
-        return `<svg ${svgStyle}><path d="M12 2l10 18H2z"/></svg>`;
+        return `<svg ${svgStyle}><path d="M12 3l10 18H2z"/></svg>`;
     }
     if (obj.type === 'polygon') {
         return `<svg ${svgStyle}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     }
     if (obj.type === 'line' || obj.type === 'polyline') {
-        return `<svg ${svgStyle}><polyline points="4 17 10 11 16 17 22 11"/></svg>`;
+        return `<svg ${svgStyle}><line x1="5" y1="19" x2="19" y2="5"/></svg>`;
     }
     if (obj.type === 'image') {
         return `<svg ${svgStyle}><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>`;
     }
-    return `<svg ${svgStyle}><path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>`;
+    return `<svg ${svgStyle}><circle cx="12" cy="12" r="10"/></svg>`;
 }
 
 function getLayerName(obj, index) {
@@ -1099,20 +1100,24 @@ function updatePropertiesPanel() {
     if (backgroundSelected) {
         html += `
             <div class="property-group">
-                <label class="property-label">Background Color</label>
-                <div class="color-input-group">
-                    <input type="color" id="prop-bg-color" value="${backgroundColor}"
-                           oninput="updateBackgroundColor(this.value)">
+                <label class="property-label">Color</label>
+                <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${backgroundColor}">
+                        <input type="color" id="prop-bg-color" value="${backgroundColor}"
+                               oninput="updateBackgroundColor(this.value)">
+                    </div>
                     <input type="text" id="prop-bg-text" class="property-input" value="${backgroundColor}"
                            oninput="updateBackgroundColor(this.value)">
                 </div>
             </div>
 
             <div class="property-group">
-                <label class="property-label">Background Opacity</label>
-                <input type="range" id="prop-bg-opacity" min="0" max="100" value="${backgroundOpacity * 100}"
-                       oninput="updateBackgroundOpacity(this.value / 100)">
-                <span id="prop-bg-opacity-value">${Math.round(backgroundOpacity * 100)}%</span>
+                <label class="property-label">Opacity</label>
+                <div class="range-container">
+                    <input type="range" id="prop-bg-opacity" min="0" max="100" value="${backgroundOpacity * 100}"
+                           oninput="updateBackgroundOpacity(this.value / 100)">
+                    <span id="prop-bg-opacity-value" class="range-value">${Math.round(backgroundOpacity * 100)}%</span>
+                </div>
             </div>
         `;
         panel.innerHTML = html;
@@ -1131,16 +1136,20 @@ function updatePropertiesPanel() {
     html += `
         <div class="property-group">
             <label class="property-label">Opacity</label>
-            <input type="range" min="0" max="100" value="${(activeObj.opacity || 1) * 100}"
-                   oninput="updateObjectProperty('opacity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-            <span>${Math.round((activeObj.opacity || 1) * 100)}%</span>
+            <div class="range-container">
+                <input type="range" min="0" max="100" value="${(activeObj.opacity || 1) * 100}"
+                       oninput="updateObjectProperty('opacity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
+                <span class="range-value">${Math.round((activeObj.opacity || 1) * 100)}%</span>
+            </div>
         </div>
 
         <div class="property-group">
             <label class="property-label">Blur</label>
-            <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
-                   oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
-            <span>${activeObj.blurAmount || 0}%</span>
+            <div class="range-container">
+                <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
+                       oninput="updateBlur(parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
+                <span class="range-value">${activeObj.blurAmount || 0}%</span>
+            </div>
         </div>
     `;
 
@@ -1148,14 +1157,16 @@ function updatePropertiesPanel() {
     if (activeObj.type === 'i-text' || activeObj.type === 'text') {
         html += `
             <div class="property-group">
-                <label class="property-label">Font Size</label>
-                <input type="range" min="10" max="300" value="${activeObj.fontSize}"
-                       oninput="updateObjectProperty('fontSize', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                <span>${activeObj.fontSize}px</span>
+                <label class="property-label">Size</label>
+                <div class="range-container">
+                    <input type="range" min="10" max="300" value="${activeObj.fontSize}"
+                           oninput="updateObjectProperty('fontSize', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.fontSize}</span>
+                </div>
             </div>
 
             <div class="property-group">
-                <label class="property-label">Font Family</label>
+                <label class="property-label">Font</label>
                 <select class="property-input" onchange="updateObjectProperty('fontFamily', this.value)">
                     ${AVAILABLE_FONTS.map(font =>
             `<option value="${font}" ${activeObj.fontFamily === font ? 'selected' : ''} style="font-family: '${font}'">${font}</option>`
@@ -1163,70 +1174,81 @@ function updatePropertiesPanel() {
                 </select>
             </div>
 
-            <div class="property-group style-controls" style="display: flex; gap: 8px;">
-                <button class="btn style-btn ${activeObj.fontWeight === 'bold' ? 'active' : ''}" 
-                        onclick="toggleFontWeight()" 
-                        style="flex: 1; font-weight: bold;">B</button>
-                <button class="btn style-btn ${activeObj.fontStyle === 'italic' ? 'active' : ''}" 
-                        onclick="toggleFontStyle()" 
-                        style="flex: 1; font-style: italic;">I</button>
-            </div>
-
-            <div class="property-group style-controls" style="display: flex; gap: 8px;">
-                <button class="btn style-btn ${activeObj.textAlign === 'left' ? 'active' : ''}" 
-                        onclick="updateObjectProperty('textAlign', 'left')" 
-                        title="Align Left"
-                        style="flex: 1;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="12" x2="15" y2="12"></line>
-                        <line x1="3" y1="18" x2="19" y2="18"></line>
-                    </svg>
-                </button>
-                <button class="btn style-btn ${activeObj.textAlign === 'center' ? 'active' : ''}" 
-                        onclick="updateObjectProperty('textAlign', 'center')" 
-                        title="Align Center"
-                        style="flex: 1;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="6" y1="12" x2="18" y2="12"></line>
-                        <line x1="4" y1="18" x2="20" y2="18"></line>
-                    </svg>
-                </button>
-                <button class="btn style-btn ${activeObj.textAlign === 'right' ? 'active' : ''}" 
-                        onclick="updateObjectProperty('textAlign', 'right')" 
-                        title="Align Right"
-                        style="flex: 1;">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="9" y1="12" x2="21" y2="12"></line>
-                        <line x1="5" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
+            <div class="property-group full-width">
+                 <div class="style-btn-group">
+                    <button class="style-btn ${activeObj.fontWeight === 'bold' ? 'active' : ''}" 
+                            onclick="toggleFontWeight()" 
+                            title="Bold">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                            <path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
+                        </svg>
+                    </button>
+                    <button class="style-btn ${activeObj.fontStyle === 'italic' ? 'active' : ''}" 
+                            onclick="toggleFontStyle()" 
+                            title="Italic">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="4" x2="10" y2="4"></line>
+                            <line x1="14" y1="20" x2="5" y2="20"></line>
+                            <line x1="15" y1="4" x2="9" y2="20"></line>
+                        </svg>
+                    </button>
+                    <div style="width: 1px; background: #222; margin: 2px 4px;"></div>
+                    <button class="style-btn ${activeObj.textAlign === 'left' ? 'active' : ''}" 
+                            onclick="updateObjectProperty('textAlign', 'left')" 
+                            title="Align Left">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="17" y1="10" x2="3" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="17" y1="18" x2="3" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button class="style-btn ${activeObj.textAlign === 'center' ? 'active' : ''}" 
+                            onclick="updateObjectProperty('textAlign', 'center')" 
+                            title="Align Center">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="17" y1="10" x2="7" y2="10"></line>
+                            <line x1="19" y1="14" x2="5" y2="14"></line>
+                            <line x1="21" y1="18" x2="3" y2="18"></line>
+                        </svg>
+                    </button>
+                    <button class="style-btn ${activeObj.textAlign === 'right' ? 'active' : ''}" 
+                            onclick="updateObjectProperty('textAlign', 'right')" 
+                            title="Align Right">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="21" y1="10" x2="7" y2="10"></line>
+                            <line x1="21" y1="6" x2="3" y2="6"></line>
+                            <line x1="21" y1="14" x2="3" y2="14"></line>
+                            <line x1="21" y1="18" x2="7" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
             </div>
 
             <div class="property-group">
-                <label class="property-label">Text Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${activeObj.fill}"
-                           oninput="updateObjectProperty('fill', this.value)">
+                <label class="property-label">Fill</label>
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${activeObj.fill}">
+                        <input type="color" value="${activeObj.fill}"
+                               oninput="updateObjectProperty('fill', this.value)">
+                    </div>
                     <input type="text" class="property-input" value="${activeObj.fill}"
                            oninput="updateObjectProperty('fill', this.value)">
                 </div>
             </div>
 
-            <div class="property-group">
-                <label class="property-label">Stroke Width</label>
-                <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
-                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                <span>${activeObj.strokeWidth || 0}px</span>
-            </div>
-
-            <div class="property-group">
-                <label class="property-label">Stroke Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${activeObj.stroke || '#000000'}"
-                           oninput="updateObjectProperty('stroke', this.value)">
+             <div class="property-group">
+                <label class="property-label">Stroke</label>
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
+                        <input type="color" value="${activeObj.stroke || '#000000'}"
+                               oninput="updateObjectProperty('stroke', this.value)">
+                    </div>
+                     <input type="range" min="0" max="20" value="${activeObj.strokeWidth || 0}"
+                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                   <span class="range-value" style="width: 20px">${activeObj.strokeWidth || 0}</span>
                 </div>
             </div>
 
@@ -1261,9 +1283,11 @@ function updatePropertiesPanel() {
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateShadowProperty('color', this.value)">
+                    <div class="color-picker-row">
+                        <div class="color-preview" style="background-color: ${activeObj.shadow.color || 'rgba(0,0,0,0.5)'}">
+                            <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                                   oninput="updateShadowProperty('color', this.value)">
+                        </div>
                     </div>
                 </div>
             ` : ''}
@@ -1304,66 +1328,79 @@ function updatePropertiesPanel() {
         // Rectangle-specific: corner radius
         if (activeObj.type === 'rect') {
             html += `
-                <div class="property-group">
-                    <label class="property-label">Corner Radius</label>
+            <div class="property-group">
+                <label class="property-label">Corner</label>
+                <div class="range-container">
                     <input type="range" min="0" max="100" value="${activeObj.rx || 0}"
-                           oninput="updateRectCorners(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.rx || 0}px</span>
+                        oninput="updateRectCorners(parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                        <span class="range-value">${activeObj.rx || 0}</span>
                 </div>
+            </div>
             `;
         }
 
         // Star-specific properties
         if (activeObj.shapeType === 'star') {
             html += `
-                <div class="property-group">
-                    <label class="property-label">Star Points</label>
+            <div class="property-group">
+                <label class="property-label">Spikes</label>
+                <div class="range-container">
                     <input type="range" min="3" max="20" value="${activeObj.starSpikes || 5}"
                            oninput="updateStarPoints(parseInt(this.value)); this.nextElementSibling.textContent = this.value">
-                    <span>${activeObj.starSpikes || 5}</span>
+                    <span class="range-value">${activeObj.starSpikes || 5}</span>
                 </div>
-
-                <div class="property-group">
-                    <label class="property-label">Outer Radius</label>
+            </div>
+             <div class="property-group">
+                <label class="property-label">Outer R</label>
+                <div class="range-container">
                     <input type="range" min="20" max="200" value="${activeObj.outerRadius || 75}"
-                           oninput="updateStarOuterRadius(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.outerRadius || 75}px</span>
+                           oninput="updateStarOuterRadius(parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.outerRadius || 75}</span>
                 </div>
-
-                <div class="property-group">
-                    <label class="property-label">Inner Radius</label>
+            </div>
+             <div class="property-group">
+                <label class="property-label">Inner R</label>
+                <div class="range-container">
                     <input type="range" min="10" max="150" value="${activeObj.innerRadius || 35}"
-                           oninput="updateStarInnerRadius(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.innerRadius || 35}px</span>
+                           oninput="updateStarInnerRadius(parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.innerRadius || 35}</span>
                 </div>
+            </div>
             `;
         }
 
         // Polygon-specific properties
         if (activeObj.shapeType === 'polygon') {
             html += `
-                <div class="property-group">
-                    <label class="property-label">Polygon Sides</label>
+            <div class="property-group">
+                <label class="property-label">Sides</label>
+                <div class="range-container">
                     <input type="range" min="3" max="12" value="${activeObj.polygonSides || 6}"
                            oninput="updatePolygonSides(parseInt(this.value)); this.nextElementSibling.textContent = this.value">
-                    <span>${activeObj.polygonSides || 6}</span>
+                    <span class="range-value">${activeObj.polygonSides || 6}</span>
                 </div>
+            </div>
 
-                <div class="property-group">
-                    <label class="property-label">Polygon Radius</label>
+            <div class="property-group">
+                <label class="property-label">Radius</label>
+                <div class="range-container">
                     <input type="range" min="20" max="200" value="${activeObj.polygonRadius || 75}"
                            oninput="updatePolygonRadius(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.polygonRadius || 75}px</span>
+                    <span class="range-value">${activeObj.polygonRadius || 75}px</span>
                 </div>
+            </div>
             `;
         }
 
         html += `
             <div class="property-group">
                 <label class="property-label">Shadow</label>
-                <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
-                </button>
+                <div style="flex: 1">
+                     ${activeObj.shadow ?
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove</button>` :
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 })); updatePropertiesPanel();">Add Shadow</button>`
+            }
+                </div>
             </div>
 
             ${activeObj.shadow ? `
@@ -1390,40 +1427,43 @@ function updatePropertiesPanel() {
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateShadowProperty('color', this.value)">
+                    <div class="color-picker-row">
+                        <div class="color-preview" style="background-color: ${activeObj.shadow.color || 'rgba(0,0,0,0.5)'}">
+                            <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                                   oninput="updateShadowProperty('color', this.value)">
+                        </div>
                     </div>
                 </div>
             ` : ''}
+            `;
 
-
-        `;
     }
 
     // Line and Path properties
     if (activeObj.type === 'line' || activeObj.type === 'polyline') {
         html += `
             <div class="property-group">
-                <label class="property-label">Stroke Width</label>
-                <input type="range" min="1" max="20" value="${activeObj.strokeWidth || 3}"
-                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                <span>${activeObj.strokeWidth || 3}px</span>
-            </div>
-
-            <div class="property-group">
-                <label class="property-label">Stroke Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${activeObj.stroke || '#000000'}"
-                           oninput="updateObjectProperty('stroke', this.value)">
+                <label class="property-label">Stroke</label>
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
+                        <input type="color" value="${activeObj.stroke || '#000000'}"
+                               oninput="updateObjectProperty('stroke', this.value)">
+                    </div>
+                     <input type="range" min="1" max="20" value="${activeObj.strokeWidth || 3}"
+                       oninput="updateObjectProperty('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                   <span class="range-value" style="width: 20px">${activeObj.strokeWidth || 3}</span>
                 </div>
             </div>
 
             <div class="property-group">
                 <label class="property-label">Shadow</label>
-                <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
-                </button>
+                <div style="flex: 1">
+                    ${activeObj.shadow ?
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null)">Remove</button>` :
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 }))">Add Shadow</button>`
+            }
+                </div>
+                </div>
             </div>
 
             ${activeObj.shadow ? `
@@ -1450,15 +1490,18 @@ function updatePropertiesPanel() {
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateShadowProperty('color', this.value)">
+                    <div class="color-picker-row">
+                        <div class="color-preview" style="background-color: ${activeObj.shadow.color || 'rgba(0,0,0,0.5)'}">
+                            <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                                   oninput="updateShadowProperty('color', this.value)">
+                        </div>
                     </div>
                 </div>
             ` : ''}
-
-
         `;
+
+
+
     }
 
     // Image properties
@@ -1469,32 +1512,36 @@ function updatePropertiesPanel() {
 
         html += `
             <div class="property-group">
-                <label class="property-label">Corner Radius</label>
-                <input type="range" min="0" max="100" value="${activeObj.cornerRadius || 0}"
-                       oninput="updateImageCorners(parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                <span>${activeObj.cornerRadius || 0}px</span>
+                <label class="property-label">Corner</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="100" value="${activeObj.cornerRadius || 0}"
+                           oninput="updateImageCorners(parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.cornerRadius || 0}</span>
+                </div>
             </div>
 
             <div class="property-group">
-                <label class="property-label">Stroke Width</label>
-                <input type="range" min="0" max="20" value="${imgStrokeWidth}"
-                       oninput="updateImageStroke('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                <span>${imgStrokeWidth}px</span>
-            </div>
-
-            <div class="property-group">
-                <label class="property-label">Stroke Color</label>
-                <div class="color-input-group">
-                    <input type="color" value="${imgStroke}"
-                           oninput="updateImageStroke('stroke', this.value)">
+                <label class="property-label">Stroke</label>
+                 <div class="color-picker-row">
+                    <div class="color-preview" style="background-color: ${imgStroke}">
+                        <input type="color" value="${imgStroke}"
+                               oninput="updateImageStroke('stroke', this.value)">
+                    </div>
+                     <input type="range" min="0" max="20" value="${imgStrokeWidth}"
+                       oninput="updateImageStroke('strokeWidth', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                   <span class="range-value" style="width: 20px">${imgStrokeWidth}</span>
                 </div>
             </div>
 
             <div class="property-group">
                 <label class="property-label">Shadow</label>
-                <button class="btn" onclick="toggleShadow()" style="width: 100%">
-                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
-                </button>
+                <div style="flex: 1">
+                     ${activeObj.shadow ?
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove</button>` :
+                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 })); updatePropertiesPanel();">Add Shadow</button>`
+            }
+                </div>
+                </div>
             </div>
 
             ${activeObj.shadow ? `
@@ -1521,15 +1568,16 @@ function updatePropertiesPanel() {
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
-                    <div class="color-input-group">
-                        <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
-                               oninput="updateShadowProperty('color', this.value)">
+                    <div class="color-picker-row">
+                        <div class="color-preview" style="background-color: ${activeObj.shadow.color || 'rgba(0,0,0,0.5)'}">
+                            <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                                   oninput="updateShadowProperty('color', this.value)">
+                        </div>
                     </div>
                 </div>
             ` : ''}
-
-
         `;
+
     }
 
     panel.innerHTML = html;
@@ -1697,13 +1745,7 @@ function applyBlur(obj, blurValue) {
 
 
 
-function updateBlur(value) {
-    const activeObj = canvas.getActiveObject();
-    if (!activeObj || activeObj.isBackground) return;
 
-    applyBlur(activeObj, value);
-    saveState();
-}
 
 function updatePolygonDimensions(obj, newPoints) {
     // Calculate bounding box of the new points
@@ -2010,17 +2052,17 @@ function exportCanvas(format = 'png') {
         let filtersParams = '';
         blurAmounts.forEach(amount => {
             filtersParams += `
-                <filter id="blur-${amount}">
-                    <feGaussianBlur in="SourceGraphic" stdDeviation="${amount}" />
-                </filter>`;
+            < filter id = "blur-${amount}" >
+                <feGaussianBlur in="SourceGraphic" stdDeviation="${amount}" />
+                </filter > `;
         });
 
         // Inject filters into SVG (prepend to <defs> or create it)
         if (filtersParams) {
             if (svgData.includes('<defs>')) {
-                svgData = svgData.replace('<defs>', `<defs>${filtersParams}`);
+                svgData = svgData.replace('<defs>', `< defs > ${filtersParams} `);
             } else {
-                svgData = svgData.replace('>', `>\n<defs>${filtersParams}</defs>`);
+                svgData = svgData.replace('>', `>\n < defs > ${filtersParams}</defs > `);
             }
         }
 
@@ -2030,7 +2072,7 @@ function exportCanvas(format = 'png') {
         const blob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
-        link.download = `thumbforge-${Date.now()}.svg`;
+        link.download = `thumbforge - ${Date.now()}.svg`;
         link.href = url;
         link.click();
         URL.revokeObjectURL(url);
@@ -2042,7 +2084,7 @@ function exportCanvas(format = 'png') {
         });
 
         const link = document.createElement('a');
-        link.download = `thumbforge-${Date.now()}.${format}`;
+        link.download = `thumbforge - ${Date.now()}.${format} `;
         link.href = dataURL;
         link.click();
     }
@@ -2173,7 +2215,7 @@ function saveProject() {
     const url = URL.createObjectURL(dataBlob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `thumbforge-project-${Date.now()}.json`;
+    link.download = `thumbforge - project - ${Date.now()}.json`;
     link.click();
     URL.revokeObjectURL(url);
 }
