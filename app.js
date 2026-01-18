@@ -1384,24 +1384,33 @@ function updatePropertiesPanel() {
 
             ${activeObj.shadow ? `
                 <div class="property-group">
-                    <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
-                           oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.blur || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('blur', 0)" title="Double click to reset">Shadow Blur</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.blur || 0}"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset X</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
-                           oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetX || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetX', 0)" title="Double click to reset">Offset X</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetX || 0}"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
-                           oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetY || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetY', 0)" title="Double click to reset">Offset Y</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetY || 0}"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
@@ -1549,24 +1558,33 @@ function updatePropertiesPanel() {
 
             ${activeObj.shadow ? `
                 <div class="property-group">
-                    <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
-                           oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.blur || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('blur', 0)" title="Double click to reset">Shadow Blur</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.blur || 0}"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset X</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
-                           oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetX || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetX', 0)" title="Double click to reset">Offset X</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetX || 0}"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
-                           oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetY || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetY', 0)" title="Double click to reset">Offset Y</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetY || 0}"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
@@ -1607,17 +1625,6 @@ function updatePropertiesPanel() {
                 </div>
             </div>
 
-            <div class="property-group">
-                <label class="property-label">Shadow</label>
-                <div style="flex: 1">
-                    ${activeObj.shadow ?
-                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null)">Remove Shadow</button>` :
-                `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 }))">Add Shadow</button>`
-            }
-                </div>
-                </div>
-            </div>
-
             <div class="panel-header">
                 <h3>Effects</h3>
             </div>
@@ -1631,26 +1638,42 @@ function updatePropertiesPanel() {
                 </div>
             </div>
 
+            <div class="property-group">
+                <label class="property-label">Shadow</label>
+                <button class="btn" onclick="toggleShadow()" style="width: 100%">
+                    ${activeObj.shadow ? 'Remove Shadow' : 'Add Shadow'}
+                </button>
+            </div>
+
             ${activeObj.shadow ? `
                 <div class="property-group">
-                    <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
-                           oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.blur || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('blur', 0)" title="Double click to reset">Shadow Blur</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.blur || 0}"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset X</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
-                           oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetX || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetX', 0)" title="Double click to reset">Offset X</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetX || 0}"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
-                           oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetY || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetY', 0)" title="Double click to reset">Offset Y</label>
+                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}" style="flex: 1; min-width: 0;"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetY || 0}"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
@@ -1663,10 +1686,9 @@ function updatePropertiesPanel() {
                     </div>
                 </div>
             ` : ''}
+
+
         `;
-
-
-
     }
 
     // Image properties
@@ -1732,24 +1754,33 @@ function updatePropertiesPanel() {
 
             ${activeObj.shadow ? `
                 <div class="property-group">
-                    <label class="property-label">Shadow Blur</label>
-                    <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
-                           oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.blur || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('blur', 0)" title="Double click to reset">Shadow Blur</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}" style="flex: 1"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 60px; padding: 2px 5px;" value="${activeObj.shadow.blur || 0}"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset X</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
-                           oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetX || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetX', 0)" title="Double click to reset">Offset X</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}" style="flex: 1"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 60px; padding: 2px 5px;" value="${activeObj.shadow.offsetX || 0}"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Offset Y</label>
-                    <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
-                           oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
-                    <span>${activeObj.shadow.offsetY || 0}px</span>
+                    <label class="property-label" ondblclick="updateShadowProperty('offsetY', 0)" title="Double click to reset">Offset Y</label>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}" style="flex: 1"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.value = this.value">
+                        <input type="number" class="property-input" style="width: 60px; padding: 2px 5px;" value="${activeObj.shadow.offsetY || 0}"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    </div>
                 </div>
 
                 <div class="property-group">
@@ -2072,6 +2103,16 @@ function updateShadowProperty(property, value) {
     activeObj.shadow[property] = value;
     canvas.renderAll();
     saveState();
+
+    // Update UI elements to reflect the change (handles double-click reset and syncs inputs)
+    // Find inputs that control this specific property
+    const inputs = document.querySelectorAll(`input[oninput*="updateShadowProperty('${property}'"]`);
+    inputs.forEach(input => {
+        // Only update if it's not the currently focused element (to avoid interfering with user typing/dragging)
+        if (document.activeElement !== input) {
+            input.value = value;
+        }
+    });
 }
 
 
