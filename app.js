@@ -1432,14 +1432,21 @@ function updatePropertiesPanel() {
     if (activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle' || activeObj.type === 'polygon') {
         html += `
             <div class="property-group">
-                <label class="property-label">Fill</label>
+                <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
+                    <label class="property-label">Fill</label>
+                    <input type="checkbox" title="No Fill" 
+                           ${activeObj.fill === 'transparent' ? 'checked' : ''} 
+                           onchange="updateObjectProperty('fill', this.checked ? 'transparent' : '#000000')">
+                </div>
                  <div class="color-picker-row">
-                    <div class="color-preview" style="background-color: ${activeObj.fill}">
-                        <input type="color" value="${activeObj.fill}"
-                               oninput="updateObjectProperty('fill', this.value)">
+                    <div class="color-preview" style="background-color: ${activeObj.fill === 'transparent' ? 'transparent' : activeObj.fill}; ${activeObj.fill === 'transparent' ? 'background-image: linear-gradient(45deg, #555 25%, transparent 25%), linear-gradient(-45deg, #555 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #555 75%), linear-gradient(-45deg, transparent 75%, #555 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;' : ''}">
+                        <input type="color" value="${activeObj.fill === 'transparent' ? '#000000' : activeObj.fill}"
+                               oninput="updateObjectProperty('fill', this.value)"
+                               ${activeObj.fill === 'transparent' ? 'disabled' : ''}>
                     </div>
-                    <input type="text" class="property-input" value="${activeObj.fill}"
-                           oninput="updateObjectProperty('fill', this.value)">
+                    <input type="text" class="property-input" value="${activeObj.fill === 'transparent' ? 'No Fill' : activeObj.fill}"
+                           oninput="updateObjectProperty('fill', this.value)"
+                           ${activeObj.fill === 'transparent' ? 'disabled' : ''}>
                 </div>
             </div>
 
@@ -1865,6 +1872,34 @@ function updateObjectProperty(property, value) {
     activeObj.dirty = true;
     canvas.renderAll();
     saveState();
+
+    // UI Synchronization Logic
+    if (property === 'fill') {
+        const isTransparent = (value === 'transparent');
+        // Check if we need to toggle 'No Fill' mode (rebuild panel) due to input disabled state
+        const fillInput = document.querySelector(`input[oninput*="updateObjectProperty('fill'"]`);
+
+        // If switching to transparent, OR if switching to color but inputs are currently disabled (No Fill mode)
+        if (isTransparent || (fillInput && fillInput.disabled)) {
+            updatePropertiesPanel();
+            return;
+        }
+
+        // Standard DOM sync for color changes (real-time update without losing focus)
+        const inputs = document.querySelectorAll(`input[oninput*="updateObjectProperty('${property}'"]`);
+        inputs.forEach(input => {
+            // Update input value if not currently focused (avoids interrupting typing/dragging)
+            if (document.activeElement !== input) {
+                input.value = value;
+            }
+
+            // Update color preview background
+            if (input.type === 'color' && input.parentElement.classList.contains('color-preview')) {
+                input.parentElement.style.backgroundColor = value;
+                input.parentElement.style.backgroundImage = 'none';
+            }
+        });
+    }
 }
 
 function toggleFontWeight() {
