@@ -43,6 +43,9 @@ select {
     color: #fff;
     margin-right: 15px;
     letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .toolbar-group {
