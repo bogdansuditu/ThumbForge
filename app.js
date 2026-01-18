@@ -1357,6 +1357,8 @@ function updatePropertiesPanel() {
                         <input type="color" value="${activeObj.stroke || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
+                    <input type="text" class="property-input" value="${activeObj.stroke}"
+                           oninput="updateObjectProperty('stroke', this.value)">
                 </div>
             </div>
 
@@ -1389,14 +1391,14 @@ function updatePropertiesPanel() {
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset X</label>
+                    <label class="property-label">Offset X</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset Y</label>
+                    <label class="property-label">Offset Y</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetY || 0}px</span>
@@ -1448,6 +1450,8 @@ function updatePropertiesPanel() {
                         <input type="color" value="${activeObj.stroke || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
+                    <input type="text" class="property-input" value="${activeObj.stroke}"
+                           oninput="updateObjectProperty('stroke', this.value)">
                 </div>
             </div>
         `;
@@ -1552,14 +1556,14 @@ function updatePropertiesPanel() {
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset X</label>
+                    <label class="property-label">Offset X</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset Y</label>
+                    <label class="property-label">Offset Y</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetY || 0}px</span>
@@ -1598,6 +1602,8 @@ function updatePropertiesPanel() {
                         <input type="color" value="${activeObj.stroke || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
+                    <input type="text" class="property-input" value="${activeObj.stroke}"
+                           oninput="updateObjectProperty('stroke', this.value)">
                 </div>
             </div>
 
@@ -1634,14 +1640,14 @@ function updatePropertiesPanel() {
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset X</label>
+                    <label class="property-label">Offset X</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset Y</label>
+                    <label class="property-label">Offset Y</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetY || 0}px</span>
@@ -1695,6 +1701,8 @@ function updatePropertiesPanel() {
                         <input type="color" value="${activeObj.stroke || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
+                    <input type="text" class="property-input" value="${activeObj.stroke}"
+                           oninput="updateObjectProperty('stroke', this.value)">
                 </div>
             </div>
 
@@ -1731,14 +1739,14 @@ function updatePropertiesPanel() {
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset X</label>
+                    <label class="property-label">Offset X</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
                            oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetX || 0}px</span>
                 </div>
 
                 <div class="property-group">
-                    <label class="property-label">Shadow Offset Y</label>
+                    <label class="property-label">Offset Y</label>
                     <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
                            oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value + 'px'">
                     <span>${activeObj.shadow.offsetY || 0}px</span>
@@ -2129,7 +2137,14 @@ function loadState(state) {
 function deleteLayer() {
     const activeObj = canvas.getActiveObject();
     if (activeObj) {
-        canvas.remove(activeObj);
+        if (activeObj.type === 'activeSelection') {
+            activeObj.getObjects().forEach(obj => {
+                canvas.remove(obj);
+            });
+            canvas.discardActiveObject();
+        } else {
+            canvas.remove(activeObj);
+        }
         canvas.renderAll();
         saveState();
     }
