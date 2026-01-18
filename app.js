@@ -204,12 +204,9 @@ function initCanvas() {
     // Handle uniform corner radius on scaling
     canvas.on('object:scaling', handleUniformCorners);
 
-    // Keep image border overlays in sync
-    canvas.on('object:moving', syncImageBorderOverlay);
-    // Keep image border overlays in sync
-    canvas.on('object:moving', syncImageBorderOverlay);
-    canvas.on('object:rotating', syncImageBorderOverlay);
-    canvas.on('object:scaling', syncImageBorderOverlay);
+    // Handle constraints (Shift+Move, Shift+Rotate)
+    canvas.on('object:moving', handleObjectMoving);
+    canvas.on('object:rotating', handleObjectRotating);
 
     // Clean up overlays when object is removed
     canvas.on('object:removed', function (e) {
@@ -354,50 +351,83 @@ function saveImmediately() {
 // This applies ctx.filter before each object renders, like template.html does
 function setupLayerLevelBlur() {
     try {
-        // Check if Fabric.js is loaded
         if (typeof fabric === 'undefined' || !fabric.Object) {
             console.warn('Fabric.js not loaded yet, skipping blur setup');
             return;
         }
 
-        // Test browser support for ctx.filter
+        // Robust browser support test
         const testCanvas = document.createElement('canvas');
         const testCtx = testCanvas.getContext('2d');
-        testCtx.filter = 'blur(5px)';
-        if (testCtx.filter !== 'blur(5px)') {
-            console.warn('Canvas filters not supported in this browser - blur effects will not work');
-            return;
+        let supportsFilter = false;
+        if (typeof testCtx.filter !== 'undefined') {
+            testCtx.filter = 'blur(5px)';
+            // Check if it accepted the value (some browsers ignore invalid/unsupported values)
+            supportsFilter = (testCtx.filter !== 'none' && testCtx.filter !== undefined);
         }
+
+        // Export support flag for other functions (like applyBlur)
+        window.supportsCanvasFilter = supportsFilter;
+        console.log('Canvas Filter Support:', supportsFilter);
 
         // Store the original drawObject method
         const originalDrawObject = fabric.Object.prototype.drawObject;
 
-        // Override drawObject to apply ctx.filter
+        // Override drawObject to apply ctx.filter OR fallback
         fabric.Object.prototype.drawObject = function (ctx) {
-            const filters = [];
-
-            // 1. Blur
-            if (this.blurAmount > 0) {
-                filters.push(`blur(${this.blurAmount}px)`);
-            }
-
-            // Apply filters
-            if (filters.length > 0) {
-                ctx.filter = filters.join(' ');
-            }
-
-            try {
-                // Call original draw method
+            // If no blur, just render normally
+            if (!this.blurAmount || this.blurAmount <= 0) {
                 originalDrawObject.call(this, ctx);
-            } finally {
-                // Always reset filter
-                if (filters.length > 0) {
+                return;
+            }
+
+            // Path 1: Native Filter Support (Chrome, Firefox, Modern Safari)
+            if (supportsFilter) {
+                const filterVal = `blur(${this.blurAmount}px)`;
+                ctx.filter = filterVal;
+                try {
+                    originalDrawObject.call(this, ctx);
+                } finally {
                     ctx.filter = 'none';
                 }
+                return;
             }
+
+            // Path 2: Safari Fallback (Shadow Hack)
+            // This works well for Shapes, Text, Lines (vector content).
+            // It does NOT work well for Images (creates solid shadow), so we skip images here.
+            // (Images will be handled by applying direct Fabric filters in applyBlur)
+            if (this.type !== 'image') {
+                const offset = 10000;
+                ctx.save();
+
+                // Set shadow to emulate blur
+                ctx.shadowBlur = this.blurAmount;
+                // Use fill or stroke color for shadow
+                // Note: Complex styles (gradients/patterns) become solid colors in shadow
+                const color = (this.fill && this.fill !== 'transparent') ? this.fill : (this.stroke || '#000000');
+                ctx.shadowColor = color;
+
+                // Offset shadow to be on-screen, while drawing object off-screen
+                ctx.shadowOffsetX = offset;
+                ctx.shadowOffsetY = 0;
+
+                // Move context so object draws off-screen
+                ctx.translate(-offset, 0);
+
+                // Render object (invisible, casting visible shadow)
+                originalDrawObject.call(this, ctx);
+
+                ctx.restore();
+                return;
+            }
+
+            // Fallback for Images (if somehow they have blurAmount but no filter support)
+            // Ideally applyBlur logic handles this, but if we end up here, just draw normal
+            originalDrawObject.call(this, ctx);
         };
 
-        // Override getSvgStyles to add filter style for SVG export
+        // Override getSvgStyles (same as before)
         const originalGetSvgStyles = fabric.Object.prototype.getSvgStyles;
         fabric.Object.prototype.getSvgStyles = function () {
             let style = originalGetSvgStyles.call(this);
@@ -494,6 +524,46 @@ function ensureBackgroundLocked() {
 }
 
 // Handle uniform corner radius during scaling
+// Handle Shift+Move Constraint (Axis Locking)
+function handleObjectMoving(e) {
+    if (!e.e.shiftKey) return;
+    const obj = e.target;
+
+    // Ensure we are moving, not rotating/scaling (Fabric sometimes fires ambiguous events or we want to be safe)
+    if (e.transform && e.transform.action !== 'drag') return;
+
+    // e.transform.original contains the state at start of transform
+    if (!e.transform || !e.transform.original) return;
+
+    const orig = e.transform.original;
+
+    const dx = Math.abs(obj.left - orig.left);
+    const dy = Math.abs(obj.top - orig.top);
+
+    if (dx > dy) {
+        // Horizontal movement dominant - lock vertical
+        obj.set('top', orig.top);
+    } else {
+        // Vertical movement dominant - lock horizontal
+        obj.set('left', orig.left);
+    }
+}
+
+// Handle Shift+Rotate Snap (15 degree increments)
+function handleObjectRotating(e) {
+    if (!e.e.shiftKey) return;
+    const obj = e.target;
+    const snap = 15;
+
+    // Calculate snapped angle
+    const currentAngle = obj.angle;
+    const snappedAngle = Math.round(currentAngle / snap) * snap;
+
+    // Use rotate() method to ensure rotation is applied around the correct origin (center)
+    // This is critical for ActiveSelection (multi-object) to rotate around the group center
+    obj.rotate(snappedAngle);
+}
+
 function handleUniformCorners(e) {
     const obj = e.target;
 
@@ -511,28 +581,7 @@ function handleUniformCorners(e) {
     }
 }
 
-// Sync image border overlay position and properties
-function syncImageBorderOverlay(e) {
-    const img = e.target;
-    if (img.type !== 'image' || !img._borderOverlay) return;
 
-    const border = img._borderOverlay;
-    const scaleX = img.scaleX || 1;
-    const scaleY = img.scaleY || 1;
-
-    border.set({
-        left: img.left,
-        top: img.top,
-        angle: img.angle || 0,
-        width: img.width * scaleX,
-        height: img.height * scaleY,
-        scaleX: 1,
-        scaleY: 1
-    });
-
-    border.setCoords();
-    canvas.renderAll();
-}
 
 
 
@@ -2011,6 +2060,55 @@ function updateBlur(value) {
 function applyBlur(obj, blurValue) {
     if (!obj) return;
 
+    // Check broad support flag (set by setupLayerLevelBlur)
+    const nativeSupport = window.supportsCanvasFilter;
+
+    // Fallback for Images on Safari/Unsupported Browsers
+    // (Shapes are handled by drawObject override using Shadow hack)
+    if (nativeSupport === false && obj.type === 'image') {
+        // Use Fabric.js internal filters
+        obj.filters = obj.filters || [];
+
+        // find index of blur filter
+        const blurIndex = obj.filters.findIndex(f => f instanceof fabric.Image.filters.Blur);
+
+        if (blurValue > 0) {
+            // Add or Update
+            // Fabric Blur filter expects 0-1 usually. Scale down if needed.
+            // Assuming blurValue (0-100) maps reasonably to filter.blur property.
+            // Experiments show Fabric Blur is effectively 0-1 range for reasonable blur.
+            // 100 would be insane. Let's scale by 0.01 to match pixel-like behavior roughly?
+            // Actually, standard Fabric demo uses 0 to 1. 0.5 is blurry.
+            // Input blurValue is 0-100 (pixels for ctx.filter).
+            // So we need to scale. 
+            const fabricBlurVal = blurValue / 100;
+
+            const fabricBlur = new fabric.Image.filters.Blur({
+                blur: fabricBlurVal
+            });
+
+            if (blurIndex > -1) {
+                // Update existing
+                obj.filters[blurIndex] = fabricBlur;
+            } else {
+                // Add new
+                obj.filters.push(fabricBlur);
+            }
+        } else {
+            // Remove filter if 0
+            if (blurIndex > -1) {
+                obj.filters.splice(blurIndex, 1);
+            }
+        }
+
+        obj.applyFilters();
+        // Caching helps filters perform better on subsequent renders
+        obj.dirty = true;
+        canvas.renderAll();
+        return;
+    }
+
+    // Standard Logic (Native Support OR Fallback-enabled Shape)
     // Simply store the blur amount on the object
     // The actual blur is applied via ctx.filter in the overridden _render method
     obj.blurAmount = blurValue;
@@ -2026,7 +2124,7 @@ function applyBlur(obj, blurValue) {
         obj.objectCaching = false;
     } else {
         // Only re-enable caching if no blur AND no corner radius
-        obj.objectCaching = true; // Was originally just (blurValue === 0)
+        obj.objectCaching = true;
     }
 
     // Force re-render to apply the new blur
