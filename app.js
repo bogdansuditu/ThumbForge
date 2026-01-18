@@ -538,100 +538,133 @@ function syncImageBorderOverlay(e) {
 
 // Apply corner radius to images using clipPath
 function applyImageCornerRadius(img) {
-    // Get stroke properties from custom properties
-    const imgStrokeWidth = img.imgStrokeWidth !== undefined ? img.imgStrokeWidth : 0;
-    const imgStroke = img.imgStroke || '#000000';
+    if (!img) return;
 
-    const scaleX = img.scaleX || 1;
-    const scaleY = img.scaleY || 1;
-    const avgScale = (scaleX + scaleY) / 2;
+    // Clean up any old separate border object if it exists (legacy fix)
+    if (img._borderOverlay) {
+        if (canvas.contains(img._borderOverlay)) {
+            canvas.remove(img._borderOverlay);
+        }
+        img._borderOverlay = null;
+    }
 
-    // If no corner radius, apply stroke directly to image
+    // If NO corner radius, use standard Fabric behavior
     if (!img.cornerRadius || img.cornerRadius === 0) {
         img.clipPath = null;
-        // Remove any border overlay if it exists
-        if (img._borderOverlay && canvas.contains(img._borderOverlay)) {
-            canvas.remove(img._borderOverlay);
-            img._borderOverlay = null;
+
+        // Restore standard properties
+        img.stroke = img.imgStroke || img.stroke || '#000000';
+        const sWidth = (img.imgStrokeWidth !== undefined) ? img.imgStrokeWidth : (img.strokeWidth || 0);
+        img.strokeWidth = sWidth;
+        img.strokeUniform = true;
+
+        // Restore render if it was overridden
+        if (img._originalRender) {
+            img._render = img._originalRender;
+            delete img._originalRender;
         }
-        img.set({
-            strokeWidth: imgStrokeWidth,
-            stroke: imgStroke,
-            strokeUniform: true,
-            dirty: true
-        });
+
+        img.dirty = true;
         canvas.renderAll();
         return;
     }
 
-    // Has corner radius - use clipPath for clipping (no stroke)
-    const radius = img.cornerRadius / avgScale;
-    const width = img.width;
-    const height = img.height;
+    // --- Corner Radius Active ---
 
-    // ClipPath for rounding corners (no stroke)
-    // Use standard approach: centered on object means negative top/left offset
-    const clipPath = new fabric.Rect({
-        left: -width / 2,
-        top: -height / 2,
-        originX: 'left',
-        originY: 'top',
-        width: width,
-        height: height,
-        rx: radius,
-        ry: radius,
-        fill: '#000000',
-        absolutePositioned: false
+    // Calculate radius logic for ClipPath once (static for the clip object)
+    // Note: If image scales later, clipPath scales with it automatically.
+    // However, we need to ensure the clipPath uses the clamped radius initially to be safe?
+    // Fabric's Rect doesn't auto-clamp rx/ry for rendering, but browsers do for corner adjustment?
+    // Let's use the raw logic but rely on consistent clamping in both places.
+
+    // We bind the dynamic render logic. We DO NOT bake values into closures.
+    // However, clipPath IS an object, so it needs initial values.
+    const scaleX = img.scaleX || 1;
+    const scaleY = img.scaleY || 1;
+    const avgScale = (scaleX + scaleY) / 2;
+    const rawRadius = img.cornerRadius / avgScale;
+
+    // Clamp radius for ClipPath to ensure it's valid geometry
+    const limit = Math.min(img.width, img.height) / 2;
+    const effectiveRadius = Math.min(rawRadius, limit);
+
+    img.clipPath = new fabric.Rect({
+        left: -img.width / 2,
+        top: -img.height / 2,
+        width: img.width,
+        height: img.height,
+        rx: effectiveRadius,
+        ry: effectiveRadius
     });
 
-    img.clipPath = clipPath;
+    // Hide standard stroke
     img.strokeWidth = 0;
-    img.objectCaching = false; // Disable caching to ensure clip updates render correctly
 
-    // If there's a stroke, create a border overlay
-    if (imgStrokeWidth > 0) {
-        const strokeWidth = imgStrokeWidth / avgScale;
-
-        // Remove old border if exists
-        if (img._borderOverlay && canvas.contains(img._borderOverlay)) {
-            canvas.remove(img._borderOverlay);
-        }
-
-        // Create border rect overlay
-        const border = new fabric.Rect({
-            left: img.left,
-            top: img.top,
-            width: width * scaleX,
-            height: height * scaleY,
-            rx: img.cornerRadius,
-            ry: img.cornerRadius,
-            fill: 'transparent',
-            stroke: imgStroke,
-            strokeWidth: imgStrokeWidth,
-            strokeUniform: true,
-            selectable: false,
-            evented: false,
-            originX: 'center',
-            originY: 'center',
-            angle: img.angle || 0,
-            temp: true // Mark as temporary so it doesn't show in layers list
-        });
-
-        canvas.add(border);
-        border.moveTo(canvas.getObjects().indexOf(img) + 1); // Place right after image
-        img._borderOverlay = border;
-    } else {
-        // Remove border if stroke width is 0
-        if (img._borderOverlay && canvas.contains(img._borderOverlay)) {
-            canvas.remove(img._borderOverlay);
-            img._borderOverlay = null;
-        }
+    // Save original render if needed
+    if (!img._originalRender) {
+        img._originalRender = img._render;
     }
+
+    // Dynamic Render Override
+    img._render = function (ctx) {
+        // 1. Draw blocked/clipped content
+        if (this._originalRender) {
+            this._originalRender.call(this, ctx);
+        }
+
+        // 2. Draw Stroke
+        // Fetch current properties from instance (handles updates/scaling)
+        const iStrokeWidth = (this.imgStrokeWidth !== undefined) ? this.imgStrokeWidth : 0;
+
+        if (iStrokeWidth > 0) {
+            const iScaleX = this.scaleX || 1;
+            const iScaleY = this.scaleY || 1;
+            const iAvgScale = (iScaleX + iScaleY) / 2;
+            const iColor = this.imgStroke || this.stroke || '#000000';
+
+            // Recalculate radius based on current state (consistent with clipPath logic)
+            // Note: img.cornerRadius is "visual" radius interacting with scale.
+            // But we operate in local space.
+            const iRawRadius = (this.cornerRadius || 0) / iAvgScale;
+            const iLimit = Math.min(this.width, this.height) / 2;
+            const rx = Math.min(iRawRadius, iLimit);
+
+            ctx.save();
+
+            // Calculate linewidth to maintain visual thickness despite object scale
+            // (Simulate strokeUniform: true)
+            ctx.lineWidth = iStrokeWidth / iAvgScale;
+
+            ctx.strokeStyle = iColor;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            const w = this.width;
+            const h = this.height;
+            const x = -w / 2;
+            const y = -h / 2;
+
+            // Robust rounded rect path matching CSS/Fabric border-radius logic
+            ctx.beginPath();
+            ctx.moveTo(x + rx, y);
+            ctx.lineTo(x + w - rx, y);
+            ctx.quadraticCurveTo(x + w, y, x + w, y + rx);
+            ctx.lineTo(x + w, y + h - rx);
+            ctx.quadraticCurveTo(x + w, y + h, x + w - rx, y + h);
+            ctx.lineTo(x + rx, y + h);
+            ctx.quadraticCurveTo(x, y + h, x, y + h - rx);
+            ctx.lineTo(x, y + rx);
+            ctx.quadraticCurveTo(x, y, x + rx, y);
+            ctx.closePath();
+
+            ctx.stroke();
+            ctx.restore();
+        }
+    };
 
     img.dirty = true;
     canvas.renderAll();
-
-
 }
 
 // Tool Management
@@ -1726,12 +1759,12 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Stroke Color</label>
                  <div class="color-picker-row">
-                    <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
-                        <input type="color" value="${activeObj.stroke || '#000000'}"
-                               oninput="updateObjectProperty('stroke', this.value)">
+                    <div class="color-preview" style="background-color: ${activeObj.imgStroke || activeObj.stroke || '#000000'}">
+                        <input type="color" value="${activeObj.imgStroke || activeObj.stroke || '#000000'}"
+                               oninput="updateImageStroke('stroke', this.value)">
                     </div>
-                    <input type="text" class="property-input" value="${activeObj.stroke}"
-                           oninput="updateObjectProperty('stroke', this.value)">
+                    <input type="text" class="property-input" value="${activeObj.imgStroke || activeObj.stroke || '#000000'}"
+                           oninput="updateImageStroke('stroke', this.value)">
                 </div>
             </div>
 
