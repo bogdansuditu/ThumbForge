@@ -1,9 +1,27 @@
 // Canvas and state management
 const AVAILABLE_FONTS = [
-    'Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Impact', 'Comic Sans MS',
-    'Roboto', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Merriweather',
-    'Playfair Display', 'Ubuntu', 'Lobster'
+    // Standard
+    'Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Verdana', 'Georgia', 'Trebuchet MS', 'Impact',
+
+    // Google Fonts - Sans Serif / Modern
+    'Roboto', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 'Merriweather', 'Playfair Display',
+
+    // Display / Poster / Bold
+    'Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One',
+
+    // Horror / Rough
+    'Creepster', 'Nosifer', 'Eater', 'Butcherman', 'Rubik Glitch', 'Rock Salt',
+
+    // Handwriting / Script / Cursive
+    'Pacifico', 'Dancing Script', 'Great Vibes', 'Satisfy', 'Allura', 'Permanent Marker', 'Rubik Marker Hatch', 'Sedgwick Ave Display',
+
+    // Decorative / Historical / Fantasy
+    'Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp'
 ];
+
+// Font Preview State
+let originalFontFamily = null;
+let isFontPreviewing = false;
 
 function preloadFonts() {
     // Create an invisible container for font preloading
@@ -1349,13 +1367,25 @@ function updatePropertiesPanel() {
                 </div>
             </div>
 
-            <div class="property-group">
+            <div class="property-group" style="z-index: 100; position: relative;">
                 <label class="property-label">Font</label>
-                <select class="property-input" onchange="updateObjectProperty('fontFamily', this.value)">
-                    ${AVAILABLE_FONTS.map(font =>
-            `<option value="${font}" ${activeObj.fontFamily === font ? 'selected' : ''} style="font-family: '${font}'">${font}</option>`
+                <!-- Custom Dropdown -->
+                <div class="custom-select-container">
+                    <div class="custom-select-trigger" onclick="event.stopPropagation(); toggleFontDropdown()">
+                        <span style="font-family: '${activeObj.fontFamily}';">${activeObj.fontFamily}</span>
+                    </div>
+                    <div id="fontSelectOptions" class="custom-select-options">
+                        ${AVAILABLE_FONTS.map(font =>
+            `<div class="custom-option ${activeObj.fontFamily === font ? 'selected' : ''}" 
+                                  style="font-family: '${font}'"
+                                  onclick="confirmFont('${font}')"
+                                  onmouseenter="previewFont('${font}')"
+                                  >
+                                ${font}
+                            </div>`
         ).join('')}
-                </select>
+                    </div>
+                </div>
             </div>
 
             <div class="property-group full-width">
@@ -2458,17 +2488,17 @@ function exportCanvas(format = 'png') {
         let filtersParams = '';
         blurAmounts.forEach(amount => {
             filtersParams += `
-            < filter id = "blur-${amount}" >
+            <filter id="blur-${amount}">
                 <feGaussianBlur in="SourceGraphic" stdDeviation="${amount}" />
-                </filter > `;
+            </filter> `;
         });
 
         // Inject filters into SVG (prepend to <defs> or create it)
         if (filtersParams) {
             if (svgData.includes('<defs>')) {
-                svgData = svgData.replace('<defs>', `< defs > ${filtersParams} `);
+                svgData = svgData.replace('<defs>', `<defs>${filtersParams}`);
             } else {
-                svgData = svgData.replace('>', `>\n < defs > ${filtersParams}</defs > `);
+                svgData = svgData.replace('>', `>\n<defs>${filtersParams}</defs>`);
             }
         }
 
@@ -3004,4 +3034,98 @@ function initZoomControls() {
             }
         }, { passive: false });
     }
+}
+
+// Custom Font Dropdown Logic
+
+function toggleFontDropdown() {
+    console.log('toggleFontDropdown called');
+    const options = document.getElementById('fontSelectOptions');
+    if (options) {
+        // Toggle the open class
+        const isOpen = options.classList.contains('open');
+
+        // Close all other potential dropdowns first (if we had others)
+        document.querySelectorAll('.custom-select-options').forEach(el => el.classList.remove('open'));
+
+        if (!isOpen) {
+            options.classList.add('open');
+            console.log('Dropdown opened');
+
+            // Store original font when opening dropdown
+            const activeObj = canvas.getActiveObject();
+            if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+                originalFontFamily = activeObj.fontFamily;
+                isFontPreviewing = true;
+
+                // Add click listener to close dropdown when clicking outside
+                setTimeout(() => {
+                    document.addEventListener('click', closeFontDropdownOutside);
+                }, 0);
+            }
+        }
+    } else {
+        console.error('fontSelectOptions not found');
+    }
+}
+
+function closeFontDropdownOutside(e) {
+    const options = document.getElementById('fontSelectOptions');
+    const container = document.querySelector('.custom-select-container');
+
+    // If click is outside the dropdown container
+    if (options && container && !container.contains(e.target)) {
+        options.classList.remove('open');
+        document.removeEventListener('click', closeFontDropdownOutside);
+
+        // Check if we need to revert
+        // If we clicked outside without selecting (confirmFont removes this listener)
+        if (isFontPreviewing) {
+            revertFont();
+        }
+    }
+}
+
+// Preview font on hover
+function previewFont(font) {
+    const activeObj = canvas.getActiveObject();
+    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+        // We don't use updateObjectProperty here because we might want to skip saving history/state for previews
+        // But for visual feedback, we must render
+        activeObj.set('fontFamily', font);
+        canvas.renderAll();
+    }
+}
+
+// Revert to original font (e.g., on mouse leave or cancel)
+function revertFont() {
+    const activeObj = canvas.getActiveObject();
+    if (activeObj && originalFontFamily && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+        activeObj.set('fontFamily', originalFontFamily);
+        canvas.renderAll();
+    }
+    isFontPreviewing = false;
+    originalFontFamily = null;
+
+    // Also ensure dropdown is closed visually if not already
+    const options = document.getElementById('fontSelectOptions');
+    if (options) options.classList.remove('open');
+    document.removeEventListener('click', closeFontDropdownOutside);
+}
+
+// Select font (click)
+function confirmFont(font) {
+    // Commit the change
+    updateObjectProperty('fontFamily', font);
+
+    // Update state
+    isFontPreviewing = false;
+    originalFontFamily = null; // Reset since this is now the "original" effectively (or just done)
+
+    // Close dropdown
+    const options = document.getElementById('fontSelectOptions');
+    if (options) {
+        options.classList.remove('open');
+    }
+    document.removeEventListener('click', closeFontDropdownOutside);
 }

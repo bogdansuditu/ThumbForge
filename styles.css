@@ -675,3 +675,73 @@ input[type=number] {
     background: #3e3e3e;
     color: #fff;
 }
+/* Custom Select Dropdown for Font Preview */
+.custom-select-container {
+    position: relative;
+    width: 100%;
+}
+
+.custom-select-trigger {
+    background: #3e3e3e;
+    border: 1px solid #111;
+    color: #e0e0e0;
+    padding: 0 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 11px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.custom-select-trigger:after {
+    content: '';
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 4px solid #aaa;
+    margin-left: 8px;
+}
+
+.custom-select-options {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: #252526;
+    border: 1px solid #3e3e3e;
+    border-radius: 0 0 4px 4px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.custom-select-options.open {
+    display: block;
+}
+
+.custom-option {
+    padding: 6px 8px;
+    cursor: pointer;
+    color: #cccccc;
+    font-size: 13px; /* Slightly larger for readability of font styles */
+}
+
+.custom-option:hover {
+    background: #007acc;
+    color: white;
+}
+
+.custom-option.selected {
+    background: #3e3e3e;
+    font-weight: bold;
+    color: #fff;
+}
+
+.custom-select-options.open {
+    display: block !important;
+}
