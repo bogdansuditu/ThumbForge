@@ -1434,9 +1434,9 @@ function updatePropertiesPanel() {
             <div class="property-group">
                 <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
                     <label class="property-label">Fill</label>
-                    <input type="checkbox" title="No Fill" 
-                           ${activeObj.fill === 'transparent' ? 'checked' : ''} 
-                           onchange="updateObjectProperty('fill', this.checked ? 'transparent' : '#000000')">
+                    <input type="checkbox" title="Enable Fill" 
+                           ${activeObj.fill !== 'transparent' ? 'checked' : ''} 
+                           onchange="updateObjectProperty('fill', this.checked ? '#000000' : 'transparent')">
                 </div>
                  <div class="color-picker-row">
                     <div class="color-preview" style="background-color: ${activeObj.fill === 'transparent' ? 'transparent' : activeObj.fill}; ${activeObj.fill === 'transparent' ? 'background-image: linear-gradient(45deg, #555 25%, transparent 25%), linear-gradient(-45deg, #555 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #555 75%), linear-gradient(-45deg, transparent 75%, #555 75%); background-size: 8px 8px; background-position: 0 0, 0 4px, 4px -4px, -4px 0px;' : ''}">
@@ -2583,6 +2583,22 @@ document.addEventListener('keydown', (e) => {
         deleteLayer();
     }
 
+    // Arrow Keys = Move Selection (1px)
+    if (activeObj && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        e.preventDefault();
+        const step = 1;
+
+        if (e.key === 'ArrowUp') activeObj.set('top', activeObj.top - step);
+        if (e.key === 'ArrowDown') activeObj.set('top', activeObj.top + step);
+        if (e.key === 'ArrowLeft') activeObj.set('left', activeObj.left - step);
+        if (e.key === 'ArrowRight') activeObj.set('left', activeObj.left + step);
+
+        activeObj.setCoords();
+        canvas.renderAll();
+        // We defer saving to keyup or debounce to avoid history spam on hold, 
+        // but for now simple movement is the priority.
+    }
+
     // Enter or Escape = Finish path
     if ((e.key === 'Enter' || e.key === 'Escape') && isDrawingPath) {
         e.preventDefault();
@@ -2627,6 +2643,13 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 't') setTool('text');
 
         if (e.key === 'l') setTool('line');
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    // Save state after moving with arrow keys
+    if (canvas.getActiveObject() && (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+        saveState();
     }
 });
 
