@@ -1874,6 +1874,9 @@ function updateObjectProperty(property, value) {
     saveState();
 
     // UI Synchronization Logic
+    // UI Synchronization Logic
+
+    // 1. Special handling for Fill transparency vs Color toggle (requires panel rebuild)
     if (property === 'fill') {
         const isTransparent = (value === 'transparent');
         // Check if we need to toggle 'No Fill' mode (rebuild panel) due to input disabled state
@@ -1884,8 +1887,11 @@ function updateObjectProperty(property, value) {
             updatePropertiesPanel();
             return;
         }
+    }
 
-        // Standard DOM sync for color changes (real-time update without losing focus)
+    // 2. Standard DOM sync for color/text changes (Fill and Stroke)
+    // This allows real-time updates without losing focus or needing re-selection
+    if (property === 'fill' || property === 'stroke') {
         const inputs = document.querySelectorAll(`input[oninput*="updateObjectProperty('${property}'"]`);
         inputs.forEach(input => {
             // Update input value if not currently focused (avoids interrupting typing/dragging)
