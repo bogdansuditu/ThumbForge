@@ -7,7 +7,7 @@ RUN rm -rf /usr/share/nginx/html/*
 # Copy application files to nginx html directory
 COPY index.html /usr/share/nginx/html/
 COPY styles.css /usr/share/nginx/html/
-COPY app.js /usr/share/nginx/html/
+COPY js /usr/share/nginx/html/js/
 COPY README.md /usr/share/nginx/html/
 COPY ThumbForge.svg /usr/share/nginx/html/
 COPY ThumbforgeTitle.svg /usr/share/nginx/html/
