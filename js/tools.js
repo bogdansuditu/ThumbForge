@@ -11,6 +11,12 @@ export function setTool(tool) {
     const toolBtn = document.querySelector(`[data-tool="${tool}"]`);
     if (toolBtn) toolBtn.classList.add('active');
 
+    // Show/Hide Close Lines option
+    const closeLinesContainer = document.getElementById('closeLinesContainer');
+    if (closeLinesContainer) {
+        closeLinesContainer.style.display = (tool === 'line') ? 'flex' : 'none';
+    }
+
     if (state.canvas) {
         state.canvas.selection = (tool === 'select' || tool === 'move');
         state.canvas.defaultCursor = (tool === 'select' || tool === 'move') ? 'default' : 'crosshair';

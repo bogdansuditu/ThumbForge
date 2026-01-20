@@ -13,5 +13,12 @@ export const state = {
     autoSaveTimeout: null,
     originalFontFamily: null,
     isFontPreviewing: false,
-    currentZoom: 1.0
+    currentZoom: 1.0,
+    isFontPreviewing: false,
+    currentZoom: 1.0,
+    closeLines: false,
+    pathNodes: [],
+    isDraggingNode: false,
+    dragStartPoint: null,
+    isSnappedToStart: false
 };

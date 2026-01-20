@@ -206,10 +206,10 @@ function getLayerIcon(obj) {
     if (obj.type === 'triangle') {
         return `<svg ${svgStyle}><path d="M12 3l10 18H2z"/></svg>`;
     }
-    if (obj.type === 'polygon') {
+    if (obj.type === 'polygon' || (obj.type === 'path' && obj.shapeType === 'polygon')) {
         return `<svg ${svgStyle}><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     }
-    if (obj.type === 'line' || obj.type === 'polyline') {
+    if (obj.type === 'line' || obj.type === 'polyline' || (obj.type === 'path' && obj.shapeType !== 'polygon')) {
         return `<svg ${svgStyle}><line x1="5" y1="19" x2="19" y2="5"/></svg>`;
     }
     if (obj.type === 'image') {
@@ -229,7 +229,8 @@ function getLayerName(obj, index) {
     if (obj.type === 'triangle') return 'Triangle';
     if (obj.type === 'polygon') return obj.points.length === 5 ? 'Star' : 'Polygon';
     if (obj.type === 'line') return 'Line';
-    if (obj.type === 'polyline') return 'Path';
+    if (obj.type === 'polyline') return 'Polyline';
+    if (obj.type === 'path') return obj.shapeType === 'polygon' ? 'Custom Shape' : 'Path';
     if (obj.type === 'image') return 'Image';
     return `Layer ${index + 1}`;
 }
@@ -411,7 +412,7 @@ export function updatePropertiesPanel() {
     // I need to make sure I include all of it.
 
     // Shape properties (Rest of the function)
-    if (activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle' || activeObj.type === 'polygon') {
+    if (activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle' || activeObj.type === 'polygon' || activeObj.type === 'path') {
         html += `
              <div class="property-group">
                  <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">

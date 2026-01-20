@@ -1,5 +1,6 @@
 import { state } from './state.js';
 import { initCanvas, updateBackgroundColor, updateBackgroundOpacity, changeCanvasSize, updateCanvasDimensions, initZoomControls } from './canvas.js';
+import { finishPath } from './canvas-events.js';
 import { setTool, addText, handleImageUpload } from './tools.js';
 import { addRectangle, addCircle, addTriangle, addStar, addPolygon, updateStarPoints, updateStarOuterRadius, updateStarInnerRadius, updatePolygonSides, updatePolygonRadius } from './shapes.js';
 import {
@@ -97,9 +98,7 @@ document.addEventListener('keydown', (e) => {
 
     if ((e.key === 'Enter' || e.key === 'Escape') && state.isDrawingPath) {
         e.preventDefault();
-        // finishPath is handled by canvas event listener on DoubleClick, but we might want to expose it if we need it here
-        // Ideally finishPath should be imported if we strictly follow the original logic
-        // But for now, let's skip the keyboard finish for path or import it if critical
+        finishPath();
     }
 
     if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
@@ -252,6 +251,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('beforeunload', (e) => {
         saveImmediately();
     });
+
+
+    const closeLinesCheckbox = document.getElementById('closeLinesCheckbox');
+    if (closeLinesCheckbox) {
+        closeLinesCheckbox.addEventListener('change', (e) => {
+            state.closeLines = e.target.checked;
+        });
+    }
 
     initZoomControls();
 });
