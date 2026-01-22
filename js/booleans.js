@@ -2,7 +2,10 @@ import { state } from './state.js';
 import { saveState } from './project.js';
 import { updateLayersList } from './interface.js';
 
-export function performBooleanOperation(operation) {
+// Boolean Operations Implementation
+// Updated to support Text and Custom Paths with absolute positioning
+
+export async function performBooleanOperation(operation) {
     const activeObjects = state.canvas.getActiveObjects();
 
     if (activeObjects.length < 2) {
@@ -11,24 +14,19 @@ export function performBooleanOperation(operation) {
     }
 
     const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text'];
-    const invalidObj = activeObjects.find(obj => !validTypes.includes(obj.type) && obj.type !== 'image');
+    const invalidObj = activeObjects.find(obj => !validTypes.includes(obj.type) && obj.type !== 'ignore-image');
 
-    if (invalidObj) {
-        alert('Boolean operations only work on vector shapes and text.');
-        return;
-    }
+    // Capture references
+    const objectsToProcess = [...activeObjects];
 
-    // Fix: Discard the active group to restore objects to their absolute coordinates
-    // This prevents relative-to-group coordinates from messing up the paper.js import
+    // Discard active group to restore objects to their absolute coordinates
     state.canvas.discardActiveObject();
 
     // Force update of coordinates for all objects involved
-    activeObjects.forEach(obj => obj.setCoords());
+    objectsToProcess.forEach(obj => obj.setCoords());
 
     try {
-        // Setup Paper.js project
         if (!paper.project) {
-            // Use state.canvas dimensions
             const tempCanvas = document.createElement('canvas');
             tempCanvas.width = state.canvas.width;
             tempCanvas.height = state.canvas.height;
@@ -39,14 +37,23 @@ export function performBooleanOperation(operation) {
 
         const paperItems = [];
 
-        // Convert to Paper items via SVG
-        // We use activeObjects here which are now ungrouped but we still have the reference
-        activeObjects.forEach(obj => {
-            const item = fabricToPaper(obj);
+        for (const obj of objectsToProcess) {
+            let item;
+            if (obj.type === 'i-text' || obj.type === 'text') {
+                try {
+                    item = await convertTextToPaperPath(obj);
+                } catch (textErr) {
+                    console.error("Text conversion failed", textErr);
+                    throw new Error(`Text conversion failed: ${textErr.message || textErr}`);
+                }
+            } else {
+                item = fabricToPaper(obj);
+            }
+
             if (item) {
                 paperItems.push(item);
             }
-        });
+        }
 
         if (paperItems.length < 2) {
             throw new Error('Could not convert selected objects to valid Paper.js paths.');
@@ -54,11 +61,12 @@ export function performBooleanOperation(operation) {
 
         let resultPath = paperItems[0];
 
-        // Unite children if the first item returned a Group (e.g. from Text)
+        // Flatten logic
         if (resultPath instanceof paper.Group) {
             let union = resultPath.children[0];
             for (let k = 1; k < resultPath.children.length; k++) {
-                union = union.unite(resultPath.children[k]);
+                if (resultPath.children[k])
+                    union = union.unite(resultPath.children[k]);
             }
             resultPath = union;
         }
@@ -66,16 +74,15 @@ export function performBooleanOperation(operation) {
         for (let i = 1; i < paperItems.length; i++) {
             let nextPath = paperItems[i];
 
-            // Flatten next operand if group
             if (nextPath instanceof paper.Group) {
                 let union = nextPath.children[0];
                 for (let k = 1; k < nextPath.children.length; k++) {
-                    union = union.unite(nextPath.children[k]);
+                    if (nextPath.children[k])
+                        union = union.unite(nextPath.children[k]);
                 }
                 nextPath = union;
             }
 
-            // Ensure we are working with path items
             if (resultPath instanceof paper.Shape) resultPath = resultPath.toPath();
             if (nextPath instanceof paper.Shape) nextPath = nextPath.toPath();
 
@@ -93,14 +100,10 @@ export function performBooleanOperation(operation) {
         }
 
         const pathData = resultPath.getPathData();
-        const sourceObj = activeObjects[activeObjects.length - 1];
+        const sourceObj = objectsToProcess[objectsToProcess.length - 1];
 
-        // Fix: Use the bounds from paper.js to set the correct position
-        const bounds = resultPath.bounds;
-
+        // Auto-positioning by Fabric from absolute path data
         const newPath = new fabric.Path(pathData, {
-            left: bounds.x,
-            top: bounds.y,
             fill: sourceObj.fill || '#cccccc',
             stroke: sourceObj.stroke || '#000000',
             strokeWidth: sourceObj.strokeWidth || 0,
@@ -113,8 +116,7 @@ export function performBooleanOperation(operation) {
         });
 
         // Cleanup
-        // Note: objects are already discarded from active selection
-        state.canvas.remove(...activeObjects);
+        state.canvas.remove(...objectsToProcess);
         state.canvas.add(newPath);
         state.canvas.setActiveObject(newPath);
         state.canvas.requestRenderAll();
@@ -126,29 +128,111 @@ export function performBooleanOperation(operation) {
 
     } catch (e) {
         console.error('Boolean operation failed:', e);
+
+        // GRACEFUL RECOVERY
+        if (objectsToProcess.length > 0) {
+            const sel = new fabric.ActiveSelection(objectsToProcess, {
+                canvas: state.canvas
+            });
+            state.canvas.setActiveObject(sel);
+            state.canvas.requestRenderAll();
+        }
+
         alert('Boolean operation failed: ' + e.message);
     }
 }
 
-// Helper: Convert Fabric Object to Paper Item via SVG
+// Helper: Convert Fabric Object to Paper Item
 function fabricToPaper(obj) {
-    // 1. Export individual object to SVG
-    // This handles all transforms (rotate, scale, skew) correctly via Fabric
+    // Special handling for Paths (custom shapes, closed lines)
+    if (obj.type === 'path' && obj.path) {
+        // Reconstruct d string
+        const d = obj.path.map(cmd => cmd.join(' ')).join(' ');
+
+        // Create item from raw path
+        const item = paper.project.importSVG(`<path d="${d}"/>`);
+
+        if (item) {
+            // Fix: Fabric paths are rendered by translating by -pathOffset first
+            const offset = obj.pathOffset || { x: 0, y: 0 };
+            item.translate(new paper.Point(-offset.x, -offset.y));
+
+            // Apply the object's transform matrix (Local -> Canvas)
+            const m = obj.calcTransformMatrix();
+            const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
+            item.matrix = matrix;
+
+            return item;
+        }
+    }
+
+    // Default for other shapes (Rect, Circle, Polygon, etc.)
     const svg = obj.toSVG();
-
-    // 2. Import into Paper
     let item = paper.project.importSVG(svg);
-
-    // 3. Normalize
     if (item) {
-        // If it's a primitive Shape (rect/circle from SVG), convert to Path
+        item.applyMatrix = true;
+    }
+    if (item) {
         if (item instanceof paper.Shape) {
             item = item.toPath();
         }
-
-        // If it's a Group (e.g. from Text), we return it as is, 
-        // the main loop handles flattening groups.
         return item;
     }
     return null;
+}
+
+async function convertTextToPaperPath(textObj) {
+    if (!window.opentype) {
+        throw new Error('Opentype.js not loaded. Cannot convert text.');
+    }
+
+    const fontFamily = textObj.fontFamily;
+    const text = textObj.text;
+    const fontSize = textObj.fontSize;
+
+    // Enhanced URL construction
+    const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}&display=swap`;
+
+    console.log(`[BooleanOps] Fetching font CSS: ${googleFontUrl}`);
+
+    try {
+        const cssResponse = await fetch(googleFontUrl);
+        if (!cssResponse.ok) throw new Error(`Failed to fetch CSS for ${fontFamily} (Status ${cssResponse.status})`);
+
+        const cssText = await cssResponse.text();
+
+        const urlMatch = cssText.match(/src:\s*url\(['"]?(.*?)['"]?\)/);
+        if (!urlMatch) {
+            console.error("[BooleanOps] CSS Content:", cssText);
+            throw new Error(`Could not find font URL for ${fontFamily} in CSS`);
+        }
+        const fontUrl = urlMatch[1];
+        console.log(`[BooleanOps] Found font URL: ${fontUrl}`);
+
+        return new Promise((resolve, reject) => {
+            opentype.load(fontUrl, function (err, font) {
+                if (err) {
+                    reject('Could not load font: ' + err);
+                } else {
+                    const path = font.getPath(text, 0, 0, fontSize);
+                    const svgPathData = path.toPathData();
+                    let paperItem = paper.project.importSVG(`<path d="${svgPathData}"/>`);
+
+                    // Align geometric center (0,0) so it matches Fabric's local origin
+                    const bounds = paperItem.bounds;
+                    paperItem.position = new paper.Point(0, 0);
+
+                    const m = textObj.calcTransformMatrix();
+                    const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
+
+                    paperItem.matrix = matrix;
+
+                    resolve(paperItem);
+                }
+            });
+        });
+    } catch (e) {
+        console.error("Font loading error details:", e);
+        throw new Error(`Failed to load font ${fontFamily}. Check console for details.`);
+    }
 }
