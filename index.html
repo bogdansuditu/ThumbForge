@@ -185,6 +185,28 @@
             </button>
         </div>
 
+        <!-- Boolean Operations (Hidden by default) -->
+        <div id="booleanGroup" class="toolbar-group" style="display: none;">
+            <button class="btn tool-btn" id="booleanUnion" title="Union">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 5h-7v7h7V5z" />
+                    <path d="M12 12H5v7h7v-7z" />
+                </svg>
+            </button>
+            <button class="btn tool-btn" id="booleanIntersect" title="Intersection">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M8 8h8v8H8z" />
+                </svg>
+            </button>
+            <button class="btn tool-btn" id="booleanExclude" title="Exclusion">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 5h-7v7h7V5z" />
+                    <path d="M12 12H5v7h7v-7z" />
+                    <line x1="22" y1="2" x2="2" y2="22" stroke="currentColor" stroke-width="1.5" />
+                </svg>
+            </button>
+        </div>
+
         <!-- Canvas Size Controls -->
         <div class="toolbar-group">
             <select id="canvasSize" class="select">
@@ -317,6 +339,7 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paper.js/0.12.17/paper-full.min.js"></script>
     <script type="module" src="js/app.js"></script>
 </body>
 

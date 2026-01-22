@@ -39,6 +39,7 @@ import {
     sendToBack,
     saveImmediately
 } from './project.js';
+import { performBooleanOperation } from './booleans.js';
 
 // Expose functions to window for HTML inline event handlers
 window.updateBackgroundColor = updateBackgroundColor;
@@ -206,6 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('alignTop').addEventListener('click', () => alignSelected('top'));
     document.getElementById('alignCenterV').addEventListener('click', () => alignSelected('centerV'));
     document.getElementById('alignBottom').addEventListener('click', () => alignSelected('bottom'));
+
+    // Boolean Operations
+    const btnUnion = document.getElementById('booleanUnion');
+    if (btnUnion) btnUnion.addEventListener('click', () => performBooleanOperation('union'));
+
+    const btnIntersect = document.getElementById('booleanIntersect');
+    if (btnIntersect) btnIntersect.addEventListener('click', () => performBooleanOperation('intersect'));
+
+    const btnExclude = document.getElementById('booleanExclude');
+    if (btnExclude) btnExclude.addEventListener('click', () => performBooleanOperation('exclude'));
 
     document.addEventListener('paste', (e) => {
         const items = e.clipboardData.items;

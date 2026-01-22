@@ -845,6 +845,31 @@ export function checkSelectionForAlignment() {
     } else {
         alignGroup.style.display = 'none';
     }
+
+    checkSelectionForBooleanOps();
+}
+
+export function checkSelectionForBooleanOps() {
+    const activeObj = state.canvas.getActiveObject();
+    const booleanGroup = document.getElementById('booleanGroup');
+
+    if (!booleanGroup) return;
+
+    if (activeObj && activeObj.type === 'activeSelection' && activeObj.getObjects().length > 1) {
+        const objects = activeObj.getObjects();
+        // Check if all objects are valid shapes for boolean ops (no images, texts for now unless converted)
+        // Valid: rect, circle, triangle, polygon, path, line, polyline
+        const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text'];
+        const allValid = objects.every(obj => validTypes.includes(obj.type));
+
+        if (allValid) {
+            booleanGroup.style.display = 'flex';
+        } else {
+            booleanGroup.style.display = 'none';
+        }
+    } else {
+        booleanGroup.style.display = 'none';
+    }
 }
 
 export function alignSelected(direction) {
