@@ -17,10 +17,10 @@ export const state = {
     isFontPreviewing: false,
     currentZoom: 1.0,
     closeLines: false,
-    pathNodes: [],
     isDraggingNode: false,
     dragStartPoint: null,
     isSnappedToStart: false,
+    cachedStrokeWidth: null,
     defaults: {
         fill: '#ffffff',
         stroke: '#000000',

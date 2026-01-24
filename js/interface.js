@@ -26,6 +26,47 @@ export function initInterface() {
             state.defaults.stroke = e.target.value;
             saveDefaults();
         });
+
+        // Initialize strike visibility based on default (if already disabled)
+        // Note: Currently persistence only saves strokeWidth not 'disabled' state explicitly,
+        // but if strokeWidth is 0 we can interpret as disabled.
+        const strikeDiv = document.getElementById('defaultStrokeStrike');
+        if (state.defaults.strokeWidth === 0 && strikeDiv) {
+            strikeDiv.style.display = 'block';
+        }
+
+        // Add RIGHT CLICK listener to toggle stroke
+        strokePicker.addEventListener('contextmenu', (e) => {
+            e.preventDefault(); // Prevent context menu
+
+            const strikeDiv = document.getElementById('defaultStrokeStrike');
+            if (!strikeDiv) return;
+
+            const isCurrentlyDisabled = (state.defaults.strokeWidth === 0);
+
+            if (isCurrentlyDisabled) {
+                // ENABLE STROKE (Restore)
+                strikeDiv.style.display = 'none';
+
+                // Restore from cache, or config default, or hard fallback
+                if (state.cachedStrokeWidth !== null && state.cachedStrokeWidth > 0) {
+                    state.defaults.strokeWidth = state.cachedStrokeWidth;
+                } else {
+                    // Fallback to 2 if cache is empty/invalid
+                    state.defaults.strokeWidth = 2;
+                }
+            } else {
+                // DISABLE STROKE
+                strikeDiv.style.display = 'block';
+
+                // Cache current width before setting to 0
+                state.cachedStrokeWidth = state.defaults.strokeWidth;
+                state.defaults.strokeWidth = 0;
+            }
+
+            saveDefaults();
+            // console.log(`[Stroke Toggle] Toggled. New Width: ${state.defaults.strokeWidth}, Cached: ${state.cachedStrokeWidth}`);
+        });
     }
 }
 
