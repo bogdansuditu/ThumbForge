@@ -31,6 +31,42 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'BodoniModa';
+    src: url('BodoniModa-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'BodoniModa';
+    src: url('BodoniModa-BlackItalic.ttf') format('truetype');
+    font-weight: 900;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'BodoniModa';
+    src: url('BodoniModa-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'BodoniModa';
+    src: url('BodoniModa-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'BodoniModa';
+    src: url('BodoniModa-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'BodoniModa';
+    src: url('BodoniModa-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Butcherman';
     src: url('Butcherman-Regular.ttf') format('truetype');
     font-weight: 400;
@@ -151,6 +187,12 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'Italiana';
+    src: url('Italiana-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Lato';
     src: url('Lato-Black.ttf') format('truetype');
     font-weight: 900;
@@ -199,8 +241,38 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'LibreBaskerville';
+    src: url('LibreBaskerville-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'LibreBaskerville';
+    src: url('LibreBaskerville-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'LibreBaskerville';
+    src: url('LibreBaskerville-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'LibreBaskerville';
+    src: url('LibreBaskerville-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Lobster';
     src: url('Lobster-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Marcellus';
+    src: url('Marcellus-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
@@ -309,6 +381,54 @@
 @font-face {
     font-family: 'Nosifer';
     src: url('Nosifer-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-BlackItalic.ttf') format('truetype');
+    font-weight: 900;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-LightItalic.ttf') format('truetype');
+    font-weight: 300;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'NotoSerif';
+    src: url('NotoSerif-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }

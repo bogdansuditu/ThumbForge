@@ -152,7 +152,8 @@ function fabricToPaper(obj) {
             const offset = obj.pathOffset || { x: 0, y: 0 };
             item.translate(new paper.Point(-offset.x, -offset.y));
             const m = obj.calcTransformMatrix();
-            const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
+            // Correct order: a, b, c, d, tx, ty
+            const matrix = new paper.Matrix(m[0], m[1], m[2], m[3], m[4], m[5]);
             item.matrix = matrix;
             return item;
         }
@@ -236,10 +237,19 @@ async function convertTextToPaperPath(textObj) {
                 let paperItem = paper.project.importSVG(`<path d="${svgPathData}"/>`);
 
                 const bounds = paperItem.bounds;
+                // Center the item at (0,0)
                 paperItem.position = new paper.Point(0, 0);
 
+                // CRITICAL FIX: Bake the centering translation into the path geometry
+                // BEFORE applying the Fabric matrix.
+                // If we don't do this, setting item.matrix later overwrites the translation,
+                // and the rotation happens around the wrong point (likely top-left of standard coord system).
+                paperItem.applyMatrix = true;
+
                 const m = textObj.calcTransformMatrix();
-                const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
+                // Correct order: a, b, c, d, tx, ty
+                // Previously m[2] and m[1] were swapped, causing inverted rotation
+                const matrix = new paper.Matrix(m[0], m[1], m[2], m[3], m[4], m[5]);
 
                 paperItem.matrix = matrix;
 

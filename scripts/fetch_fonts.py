@@ -6,8 +6,10 @@ import urllib.error
 # Fonts to download from Google Fonts
 AVAILABLE_FONTS = [
     # Google Fonts - Sans Serif / Modern
-    'Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 'Merriweather', 'Playfair Display',
+    'Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 
 
+    # Serif / Old School
+    'Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab'
     # Display / Poster / Bold
     'Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One',
 
