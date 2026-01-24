@@ -1,5 +1,32 @@
 export const AVAILABLE_FONTS = [];
 
+export const FONT_GROUPS = [
+    {
+        category: 'Sans Serif / Modern',
+        fonts: ['Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu']
+    },
+    {
+        category: 'Serif / Old School',
+        fonts: ['Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab']
+    },
+    {
+        category: 'Display / Poster / Bold',
+        fonts: ['Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One']
+    },
+    {
+        category: 'Horror / Rough',
+        fonts: ['Creepster', 'Nosifer', 'Eater', 'Butcherman', 'Rubik Glitch', 'Rock Salt']
+    },
+    {
+        category: 'Handwriting / Script / Cursive',
+        fonts: ['Pacifico', 'Dancing Script', 'Great Vibes', 'Satisfy', 'Allura', 'Permanent Marker', 'Rubik Marker Hatch', 'Sedgwick Ave Display']
+    },
+    {
+        category: 'Decorative / Historical / Fantasy',
+        fonts: ['Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp']
+    }
+];
+
 export const MAX_HISTORY = 50;
 
 export async function loadAvailableFonts() {

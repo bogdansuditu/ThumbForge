@@ -1,5 +1,5 @@
 import { state, saveDefaults } from './state.js';
-import { AVAILABLE_FONTS } from './config.js';
+import { AVAILABLE_FONTS, FONT_GROUPS } from './config.js';
 import { saveState } from './project.js';
 import { applyImageCornerRadius, applyBlur, updateStarPoints, updateStarOuterRadius, updateStarInnerRadius, updatePolygonSides, updatePolygonRadius } from './shapes.js';
 import { updateBackgroundColor, updateBackgroundOpacity } from './canvas.js';
@@ -329,15 +329,18 @@ export function updatePropertiesPanel() {
                         <span style="font-family: '${activeObj.fontFamily}';">${activeObj.fontFamily}</span>
                     </div>
                     <div id="fontSelectOptions" class="custom-select-options">
-                        ${AVAILABLE_FONTS.map(font =>
+                        ${FONT_GROUPS.map(group => `
+                            <div class="font-group-header" style="padding: 4px 8px; font-size: 0.75em; font-weight: bold; color: #888; background: #2a2a2a; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0;">${group.category}</div>
+                            ${group.fonts.map(font =>
             `<div class="custom-option ${activeObj.fontFamily === font ? 'selected' : ''}" 
-                                  style="font-family: '${font}'"
-                                  onclick="confirmFont('${font}')"
-                                  onmouseenter="previewFont('${font}')"
-                                  >
-                                ${font}
-                            </div>`
+                                      style="font-family: '${font}'"
+                                      onclick="confirmFont('${font}')"
+                                      onmouseenter="previewFont('${font}')"
+                                      >
+                                    ${font}
+                                </div>`
         ).join('')}
+                        `).join('')}
                     </div>
                 </div>
             </div>
