@@ -229,12 +229,7 @@ async function convertTextToPaperPath(textObj) {
         opentype.load(fontPath, function (err, font) {
             if (err) {
                 console.error(`[BooleanOps] Failed to load ${fontPath}`, err);
-                // Friendly error for System Fonts or Missing Downloads
-                if (['Arial', 'Helvetica', 'TimesNewRoman', 'CourierNew', 'Impact', 'ComicSansMS', 'Verdana', 'Georgia', 'TrebuchetMS'].includes(safeFamily)) {
-                    reject(`System font "${fontFamily}" is not available locally. Please use a text object with a Google Font.`);
-                } else {
-                    reject(`Could not load local font file: ${filename}. Please ensure it is present in the fonts directory.`);
-                }
+                reject(`Could not load local font file: ${filename}. Please ensure it is present in the fonts directory.`);
             } else {
                 const path = font.getPath(text, 0, 0, fontSize);
                 const svgPathData = path.toPathData();

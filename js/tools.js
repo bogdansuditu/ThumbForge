@@ -1,6 +1,7 @@
 import { state } from './state.js';
 import { applyImageCornerRadius } from './shapes.js';
 import { saveState } from './project.js';
+import { AVAILABLE_FONTS } from './config.js';
 
 export function setTool(tool) {
     state.currentTool = tool;
@@ -29,11 +30,14 @@ export function setTool(tool) {
 }
 
 export function addText() {
+    // strict no-hardcode policy: use first available font or generic
+    const defaultFont = (AVAILABLE_FONTS && AVAILABLE_FONTS.length > 0) ? AVAILABLE_FONTS[0] : 'sans-serif';
+
     const text = new fabric.IText('Click to edit', {
         left: state.canvas.width / 2,
         top: state.canvas.height / 2,
         fontSize: 48,
-        fontFamily: 'Arial',
+        fontFamily: defaultFont,
         fill: '#000000',
         strokeWidth: 0,
         stroke: '#000000',

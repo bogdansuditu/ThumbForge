@@ -138,7 +138,7 @@ No React, no Context API - just plain JavaScript variables.
 - Click to add text
 - Double-click text to edit inline
 - Properties:
-  - Font family (Arial, Helvetica, Times New Roman, Courier, Impact, Comic Sans)
+  - Font family - extracted from the fonts.json file
   - Font size (number input)
   - Text color (real-time color picker)
   - Stroke width (0-20px slider)

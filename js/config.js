@@ -15,8 +15,7 @@ export async function loadAvailableFonts() {
         console.log(`[Config] Loaded ${AVAILABLE_FONTS.length} fonts dynamically.`);
     } catch (e) {
         console.error("[Config] Error loading dynamic fonts:", e);
-        // Fallback or empty? User wants dynamic, so empty list is correct behavior on failure (or maybe hardcoded fallback)
-        // But let's assume valid deployment.
-        AVAILABLE_FONTS.push('Arial'); // Minimal fallback just in case
+        // Fail silently or maybe alert user? For now just log usage.
+        // User explicitly requested NO hardcoded fonts.
     }
 }

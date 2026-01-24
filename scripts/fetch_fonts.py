@@ -3,13 +3,10 @@ import json
 import urllib.request
 import urllib.error
 
-# Fonts from js/config.js
+# Fonts to download from Google Fonts
 AVAILABLE_FONTS = [
-    # Standard (System fonts - skipped for download but listed for checking)
-    'Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Verdana', 'Georgia', 'Trebuchet MS', 'Impact',
-
     # Google Fonts - Sans Serif / Modern
-    'Roboto', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 'Merriweather', 'Playfair Display',
+    'Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 'Merriweather', 'Playfair Display',
 
     # Display / Poster / Bold
     'Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One',
@@ -23,8 +20,6 @@ AVAILABLE_FONTS = [
     # Decorative / Historical / Fantasy
     'Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp'
 ]
-
-SYSTEM_FONTS = ['Arial', 'Helvetica', 'Times New Roman', 'Courier New', 'Comic Sans MS', 'Verdana', 'Georgia', 'Trebuchet MS', 'Impact']
 
 FONTS_DIR = os.path.join(os.getcwd(), 'fonts')
 CSS_FILE = os.path.join(FONTS_DIR, 'fonts.css')
@@ -49,10 +44,6 @@ def download_file(url, dest):
         return False
 
 def process_font(family):
-    if family in SYSTEM_FONTS:
-        print(f"Skipping system font: {family}")
-        return
-
     font_id = slugify(family)
     api_url = f"https://gwfh.mranftl.com/api/fonts/{font_id}"
 
