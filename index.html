@@ -207,6 +207,29 @@
 
         <!-- Canvas Size Controls -->
         <div class="toolbar-group">
+            <!-- Defaults Controls -->
+            <div class="toolbar-group" style="margin-right: 15px;">
+                <div class="color-picker-wrapper" title="Default Fill Color"
+                    style="display: flex; align-items: center; margin-right: 10px;">
+                    <div
+                        style="width: 20px; height: 20px; border-radius: 4px; overflow: hidden; border: 1px solid #444; position: relative;">
+                        <input type="color" id="defaultFillColor" value="#ffffff"
+                            style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; border: none; padding: 0;">
+                    </div>
+                </div>
+                <div class="color-picker-wrapper" title="Default Stroke Color"
+                    style="display: flex; align-items: center;">
+                    <div
+                        style="width: 20px; height: 20px; border-radius: 4px; overflow: hidden; border: 1px solid #444; position: relative; background: conic-gradient(from 180deg at 50% 50%, #000000 0deg, #000000 360deg);">
+                        <div
+                            style="position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px; background: #2a2a2a; pointer-events: none; border-radius: 2px;">
+                        </div>
+                        <input type="color" id="defaultStrokeColor" value="#000000"
+                            style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; border: none; padding: 0;">
+                    </div>
+                </div>
+            </div>
+
             <select id="canvasSize" class="select">
                 <option value="1280x720">YouTube (1280×720)</option>
                 <option value="1080x1080">Square (1080×1080)</option>

@@ -20,5 +20,31 @@ export const state = {
     pathNodes: [],
     isDraggingNode: false,
     dragStartPoint: null,
-    isSnappedToStart: false
+    isSnappedToStart: false,
+    defaults: {
+        fill: '#ffffff',
+        stroke: '#000000',
+        strokeWidth: 1,
+        backgroundColor: '#808080',
+        fontFamily: 'Lato'
+    }
 };
+
+// Load defaults from local storage if available
+const savedDefaults = localStorage.getItem('thumbforge_defaults');
+if (savedDefaults) {
+    try {
+        const parsed = JSON.parse(savedDefaults);
+        state.defaults = { ...state.defaults, ...parsed };
+        state.backgroundColor = state.defaults.backgroundColor; // Ensure initial background matches default
+    } catch (e) {
+        console.error('Failed to parse saved defaults', e);
+    }
+} else {
+    // First run defaults
+    state.backgroundColor = state.defaults.backgroundColor;
+}
+
+export function saveDefaults() {
+    localStorage.setItem('thumbforge_defaults', JSON.stringify(state.defaults));
+}

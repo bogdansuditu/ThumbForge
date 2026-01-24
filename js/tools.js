@@ -31,16 +31,16 @@ export function setTool(tool) {
 
 export function addText() {
     // strict no-hardcode policy: use first available font or generic
-    const defaultFont = (AVAILABLE_FONTS && AVAILABLE_FONTS.length > 0) ? AVAILABLE_FONTS[0] : 'sans-serif';
+    const defaultFont = state.defaults.fontFamily || (AVAILABLE_FONTS && AVAILABLE_FONTS.length > 0 ? AVAILABLE_FONTS[0] : 'sans-serif');
 
     const text = new fabric.IText('Click to edit', {
         left: state.canvas.width / 2,
         top: state.canvas.height / 2,
         fontSize: 48,
         fontFamily: defaultFont,
-        fill: '#000000',
-        strokeWidth: 0,
-        stroke: '#000000',
+        fill: state.defaults.fill,
+        strokeWidth: state.defaults.strokeWidth,
+        stroke: state.defaults.stroke,
         strokeUniform: true,
         shadow: null,
         originX: 'center',

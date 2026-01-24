@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, saveDefaults } from './state.js';
 import { AVAILABLE_FONTS } from './config.js';
 import { saveState } from './project.js';
 import { applyImageCornerRadius, applyBlur, updateStarPoints, updateStarOuterRadius, updateStarInnerRadius, updatePolygonSides, updatePolygonRadius } from './shapes.js';
@@ -6,6 +6,28 @@ import { updateBackgroundColor, updateBackgroundOpacity } from './canvas.js';
 
 
 let draggedElement = null;
+
+export function initInterface() {
+    // Toolbar default color pickers
+    const fillPicker = document.getElementById('defaultFillColor');
+    const strokePicker = document.getElementById('defaultStrokeColor');
+
+    if (fillPicker) {
+        fillPicker.value = state.defaults.fill;
+        fillPicker.addEventListener('input', (e) => {
+            state.defaults.fill = e.target.value;
+            saveDefaults();
+        });
+    }
+
+    if (strokePicker) {
+        strokePicker.value = state.defaults.stroke;
+        strokePicker.addEventListener('input', (e) => {
+            state.defaults.stroke = e.target.value;
+            saveDefaults();
+        });
+    }
+}
 
 export function updateLayersList() {
     const layersList = document.getElementById('layersList');
@@ -661,6 +683,9 @@ export function updateObjectProperty(property, value) {
     if (!activeObj) return;
 
     if (property === 'fontFamily') {
+        state.defaults.fontFamily = value; // Sync default
+        saveDefaults();
+
         const fontWeight = activeObj.fontWeight || 'normal';
         const fontStyle = activeObj.fontStyle || 'normal';
         const fontString = `${fontStyle} ${fontWeight} 12px "${value}"`;
@@ -671,6 +696,7 @@ export function updateObjectProperty(property, value) {
             activeObj.setCoords();
             activeObj.dirty = true;
             state.canvas.requestRenderAll();
+            updatePropertiesPanel();
             saveState();
         }).catch(() => {
             activeObj.set(property, value);
@@ -678,12 +704,19 @@ export function updateObjectProperty(property, value) {
             activeObj.setCoords();
             activeObj.dirty = true;
             state.canvas.requestRenderAll();
+            updatePropertiesPanel();
             saveState();
         });
         return;
     }
 
     activeObj.set(property, value);
+
+    // Sync stroke width to defaults
+    if (property === 'strokeWidth' && (activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle' || activeObj.type === 'polygon' || activeObj.type === 'path' || activeObj.type === 'line' || activeObj.type === 'polyline' || activeObj.type === 'i-text' || activeObj.type === 'text')) {
+        state.defaults.strokeWidth = parseInt(value);
+        saveDefaults();
+    }
 
     if ((activeObj.type === 'image' || activeObj.type === 'text' || activeObj.type === 'i-text') &&
         (property === 'fontSize' || property === 'fontWeight' || property === 'fontStyle' || property === 'text')) {
@@ -710,6 +743,13 @@ export function updateObjectProperty(property, value) {
     saveState();
 
     if (property === 'fill') {
+        state.defaults.fill = value;
+        saveDefaults();
+
+        // Sync toolbar picker
+        const toolbarFill = document.getElementById('defaultFillColor');
+        if (toolbarFill) toolbarFill.value = value;
+
         const isTransparent = (value === 'transparent');
         const fillInput = document.querySelector(`input[oninput*="updateObjectProperty('fill'"]`);
 
@@ -717,6 +757,15 @@ export function updateObjectProperty(property, value) {
             updatePropertiesPanel();
             return;
         }
+    }
+
+    if (property === 'stroke') {
+        state.defaults.stroke = value;
+        saveDefaults();
+
+        // Sync toolbar picker
+        const toolbarStroke = document.getElementById('defaultStrokeColor');
+        if (toolbarStroke) toolbarStroke.value = value;
     }
 
     if (property === 'fill' || property === 'stroke') {

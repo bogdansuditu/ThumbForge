@@ -1,4 +1,4 @@
-import { state } from './state.js';
+import { state, saveDefaults } from './state.js';
 import { AVAILABLE_FONTS } from './config.js';
 import { restoreAutoSave, saveState, saveImmediately } from './project.js';
 import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSelectionForAlignment } from './interface.js';
@@ -19,7 +19,9 @@ export function initCanvas() {
     state.canvas = new fabric.Canvas('canvas', {
         width: width,
         height: height,
-        backgroundColor: '#ffffff',
+        width: width,
+        height: height,
+        backgroundColor: state.defaults.backgroundColor,
         preserveObjectStacking: true
     });
 
@@ -116,6 +118,8 @@ function preloadFonts() {
 
 export function updateBackgroundColor(color) {
     state.backgroundColor = color;
+    state.defaults.backgroundColor = color;
+    saveDefaults();
     applyBackgroundColor();
 
     if (state.backgroundSelected) {

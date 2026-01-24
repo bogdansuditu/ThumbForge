@@ -22,7 +22,8 @@ import {
     updateImageStroke,
     updateBlur,
     toggleShadow,
-    updateShadowProperty
+    updateShadowProperty,
+    initInterface
 } from './interface.js';
 import {
     undo,
@@ -147,6 +148,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     try {
         await loadAvailableFonts();
         initCanvas();
+        initInterface();
     } catch (error) {
         console.error('Error initializing canvas:', error);
         alert('Error initializing canvas. Check console for details.');

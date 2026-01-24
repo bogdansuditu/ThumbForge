@@ -213,10 +213,10 @@ export function finishPath(e) {
         const pathData = generatePathData(state.pathNodes, closed);
 
         const pathObj = new fabric.Path(pathData, {
-            stroke: '#000000',
-            strokeWidth: 3,
+            stroke: state.defaults.stroke,
+            strokeWidth: state.defaults.strokeWidth,
             strokeUniform: true,
-            fill: closed ? '#cccccc' : 'transparent',
+            fill: closed ? state.defaults.fill : 'transparent',
             selectable: true,
             blurAmount: 0,
             objectCaching: true,
