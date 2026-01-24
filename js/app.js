@@ -1,4 +1,5 @@
 import { state } from './state.js';
+import { AVAILABLE_FONTS, loadAvailableFonts } from './config.js';
 import { initCanvas, updateBackgroundColor, updateBackgroundOpacity, changeCanvasSize, updateCanvasDimensions, initZoomControls } from './canvas.js';
 import { finishPath } from './canvas-events.js';
 import { setTool, addText, handleImageUpload } from './tools.js';
@@ -142,8 +143,9 @@ document.addEventListener('keyup', (e) => {
 });
 
 // Event Listeners
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     try {
+        await loadAvailableFonts();
         initCanvas();
     } catch (error) {
         console.error('Error initializing canvas:', error);

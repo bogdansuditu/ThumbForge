@@ -13,6 +13,7 @@ COPY ThumbForge.svg /usr/share/nginx/html/
 COPY ThumbforgeTitle.svg /usr/share/nginx/html/
 COPY apple-touch-icon.png /usr/share/nginx/html/
 COPY manifest.json /usr/share/nginx/html/
+COPY fonts /usr/share/nginx/html/fonts/
 
 # Copy custom nginx configuration (optional)
 COPY nginx.conf /etc/nginx/conf.d/default.conf

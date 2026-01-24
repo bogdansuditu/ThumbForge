@@ -3,7 +3,7 @@ import { saveState } from './project.js';
 import { updateLayersList } from './interface.js';
 
 // Boolean Operations Implementation
-// Updated to support Text and Custom Paths with absolute positioning
+// Support for Text (LOCAL FONTS ONLY) and Custom Paths.
 
 export async function performBooleanOperation(operation) {
     const activeObjects = state.canvas.getActiveObjects();
@@ -13,6 +13,7 @@ export async function performBooleanOperation(operation) {
         return;
     }
 
+    // Allow text in valid types
     const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text'];
     const invalidObj = activeObjects.find(obj => !validTypes.includes(obj.type) && obj.type !== 'ignore-image');
 
@@ -144,29 +145,19 @@ export async function performBooleanOperation(operation) {
 
 // Helper: Convert Fabric Object to Paper Item
 function fabricToPaper(obj) {
-    // Special handling for Paths (custom shapes, closed lines)
     if (obj.type === 'path' && obj.path) {
-        // Reconstruct d string
         const d = obj.path.map(cmd => cmd.join(' ')).join(' ');
-
-        // Create item from raw path
         const item = paper.project.importSVG(`<path d="${d}"/>`);
-
         if (item) {
-            // Fix: Fabric paths are rendered by translating by -pathOffset first
             const offset = obj.pathOffset || { x: 0, y: 0 };
             item.translate(new paper.Point(-offset.x, -offset.y));
-
-            // Apply the object's transform matrix (Local -> Canvas)
             const m = obj.calcTransformMatrix();
             const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
             item.matrix = matrix;
-
             return item;
         }
     }
 
-    // Default for other shapes (Rect, Circle, Polygon, etc.)
     const svg = obj.toSVG();
     let item = paper.project.importSVG(svg);
     if (item) {
@@ -181,6 +172,7 @@ function fabricToPaper(obj) {
     return null;
 }
 
+// Helper: Load Local Font File
 async function convertTextToPaperPath(textObj) {
     if (!window.opentype) {
         throw new Error('Opentype.js not loaded. Cannot convert text.');
@@ -190,49 +182,74 @@ async function convertTextToPaperPath(textObj) {
     const text = textObj.text;
     const fontSize = textObj.fontSize;
 
-    // Enhanced URL construction
-    const googleFontUrl = `https://fonts.googleapis.com/css2?family=${fontFamily.replace(/ /g, '+')}&display=swap`;
+    // Determine Weight/Style for Filename Construction
+    const fontWeight = textObj.fontWeight || 'normal';
+    const fontStyle = textObj.fontStyle || 'normal';
 
-    console.log(`[BooleanOps] Fetching font CSS: ${googleFontUrl}`);
+    let weightVal = 400;
+    if (fontWeight === 'bold' || fontWeight === 700 || fontWeight === '700') weightVal = 700;
+    else if (fontWeight === 'normal' || fontWeight === 400 || fontWeight === '400') weightVal = 400;
+    else weightVal = parseInt(fontWeight);
 
-    try {
-        const cssResponse = await fetch(googleFontUrl);
-        if (!cssResponse.ok) throw new Error(`Failed to fetch CSS for ${fontFamily} (Status ${cssResponse.status})`);
+    const isItalic = (fontStyle === 'italic');
 
-        const cssText = await cssResponse.text();
+    // MAPPING LOGIC (Must match Python Script)
+    // Suffix Logic:
+    // 700 + normal -> Bold
+    // 700 + italic -> BoldItalic
+    // 400 + italic -> Italic
+    // 300 + normal -> Light
+    // 300 + italic -> LightItalic
+    // 900 -> Black/BlackItalic
+    // 400 + normal -> Regular
 
-        const urlMatch = cssText.match(/src:\s*url\(['"]?(.*?)['"]?\)/);
-        if (!urlMatch) {
-            console.error("[BooleanOps] CSS Content:", cssText);
-            throw new Error(`Could not find font URL for ${fontFamily} in CSS`);
-        }
-        const fontUrl = urlMatch[1];
-        console.log(`[BooleanOps] Found font URL: ${fontUrl}`);
+    let suffix = 'Regular';
 
-        return new Promise((resolve, reject) => {
-            opentype.load(fontUrl, function (err, font) {
-                if (err) {
-                    reject('Could not load font: ' + err);
-                } else {
-                    const path = font.getPath(text, 0, 0, fontSize);
-                    const svgPathData = path.toPathData();
-                    let paperItem = paper.project.importSVG(`<path d="${svgPathData}"/>`);
-
-                    // Align geometric center (0,0) so it matches Fabric's local origin
-                    const bounds = paperItem.bounds;
-                    paperItem.position = new paper.Point(0, 0);
-
-                    const m = textObj.calcTransformMatrix();
-                    const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
-
-                    paperItem.matrix = matrix;
-
-                    resolve(paperItem);
-                }
-            });
-        });
-    } catch (e) {
-        console.error("Font loading error details:", e);
-        throw new Error(`Failed to load font ${fontFamily}. Check console for details.`);
+    if (weightVal === 700) {
+        suffix = isItalic ? 'BoldItalic' : 'Bold';
+    } else if (weightVal === 400) {
+        suffix = isItalic ? 'Italic' : 'Regular';
+    } else if (weightVal === 300) {
+        suffix = isItalic ? 'LightItalic' : 'Light';
+    } else if (weightVal === 900) {
+        suffix = isItalic ? 'BlackItalic' : 'Black';
+    } else {
+        // Fallback or exact match if other weights exist
+        suffix = `${weightVal}${isItalic ? 'Italic' : ''}`;
     }
+
+    // Filename: Remove spaces from family
+    const safeFamily = fontFamily.replace(/\s+/g, '');
+    const filename = `${safeFamily}-${suffix}.ttf`;
+    const fontPath = `fonts/${filename}`;
+
+    console.log(`[BooleanOps] Loading local font: ${fontPath}`);
+
+    return new Promise((resolve, reject) => {
+        opentype.load(fontPath, function (err, font) {
+            if (err) {
+                console.error(`[BooleanOps] Failed to load ${fontPath}`, err);
+                // Friendly error for System Fonts or Missing Downloads
+                if (['Arial', 'Helvetica', 'TimesNewRoman', 'CourierNew', 'Impact', 'ComicSansMS', 'Verdana', 'Georgia', 'TrebuchetMS'].includes(safeFamily)) {
+                    reject(`System font "${fontFamily}" is not available locally. Please use a text object with a Google Font.`);
+                } else {
+                    reject(`Could not load local font file: ${filename}. Please ensure it is present in the fonts directory.`);
+                }
+            } else {
+                const path = font.getPath(text, 0, 0, fontSize);
+                const svgPathData = path.toPathData();
+                let paperItem = paper.project.importSVG(`<path d="${svgPathData}"/>`);
+
+                const bounds = paperItem.bounds;
+                paperItem.position = new paper.Point(0, 0);
+
+                const m = textObj.calcTransformMatrix();
+                const matrix = new paper.Matrix(m[0], m[2], m[1], m[3], m[4], m[5]);
+
+                paperItem.matrix = matrix;
+
+                resolve(paperItem);
+            }
+        });
+    });
 }
