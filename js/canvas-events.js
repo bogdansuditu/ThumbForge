@@ -3,8 +3,29 @@ import { setTool } from './tools.js';
 import { applyImageCornerRadius } from './shapes.js';
 
 export function handleObjectMoving(e) {
-    if (!e.e.shiftKey) return;
     const obj = e.target;
+
+    // Drag Duplicate Logic
+    if (e.e.altKey && !obj._isDragDuplicating) {
+        if (e.transform && e.transform.original) {
+            const orig = e.transform.original;
+
+            // Create a static copy at the ORIGINAL position
+            // The current object (active) continues getting dragged by the user
+            import('./project.js').then(module => {
+                module.duplicateLayer({
+                    selectCopy: false, // Keep the dragged object selected
+                    offset: 0,
+                    left: orig.left,
+                    top: orig.top
+                });
+            });
+
+            obj._isDragDuplicating = true;
+        }
+    }
+
+    if (!e.e.shiftKey) return;
 
     if (e.transform && e.transform.action !== 'drag') return;
     if (!e.transform || !e.transform.original) return;
@@ -144,6 +165,13 @@ export function handlePathUp(e) {
     if (state.currentTool !== 'line') return;
     state.isDraggingNode = false;
     state.dragStartPoint = null;
+}
+
+export function handleObjectUp(e) {
+    const activeObj = state.canvas.getActiveObject();
+    if (activeObj) {
+        activeObj._isDragDuplicating = false;
+    }
 }
 
 export function updateTempPath() {

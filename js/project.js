@@ -351,16 +351,31 @@ export function deleteLayer() {
     }
 }
 
-export function duplicateLayer() {
+export function duplicateLayer(options = {}) {
     const activeObj = state.canvas.getActiveObject();
     if (!activeObj) return;
 
+    const defaultOptions = {
+        selectCopy: true,
+        offset: 20,
+        left: undefined,
+        top: undefined
+    };
+
+    const config = { ...defaultOptions, ...options };
+
     // Simplified clone
     activeObj.clone((cloned) => {
-        state.canvas.discardActiveObject();
+        if (config.selectCopy) {
+            state.canvas.discardActiveObject();
+        }
+
+        const newLeft = config.left !== undefined ? config.left : cloned.left + config.offset;
+        const newTop = config.top !== undefined ? config.top : cloned.top + config.offset;
+
         cloned.set({
-            left: cloned.left + 20,
-            top: cloned.top + 20,
+            left: newLeft,
+            top: newTop,
             evented: true,
             name: activeObj.name ? activeObj.name + ' (Copy)' : undefined
         });
@@ -379,7 +394,10 @@ export function duplicateLayer() {
             applyImageCornerRadius(cloned);
         }
 
-        state.canvas.setActiveObject(cloned);
+        if (config.selectCopy) {
+            state.canvas.setActiveObject(cloned);
+        }
+
         state.canvas.renderAll();
         updateLayersList();
         saveState();

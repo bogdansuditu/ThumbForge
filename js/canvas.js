@@ -2,7 +2,7 @@ import { state, saveDefaults } from './state.js';
 import { AVAILABLE_FONTS } from './config.js';
 import { restoreAutoSave, saveState, saveImmediately } from './project.js';
 import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSelectionForAlignment } from './interface.js';
-import { handleUniformCorners, handleObjectMoving, handleObjectRotating, handlePathClick, handlePathMove, handlePathUp, finishPath } from './canvas-events.js';
+import { handleUniformCorners, handleObjectMoving, handleObjectRotating, handlePathClick, handlePathMove, handlePathUp, finishPath, handleObjectUp } from './canvas-events.js';
 import { applyBlur } from './shapes.js';
 import { checkLayerLevelBlurSupport } from './utils.js';
 
@@ -76,7 +76,10 @@ export function initCanvas() {
     // Path drawing
     state.canvas.on('mouse:down', handlePathClick);
     state.canvas.on('mouse:move', handlePathMove);
-    state.canvas.on('mouse:up', handlePathUp);
+    state.canvas.on('mouse:up', (e) => {
+        handlePathUp(e);
+        handleObjectUp(e);
+    });
     state.canvas.on('mouse:dblclick', finishPath);
 
     // Try to restore from auto-save
