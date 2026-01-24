@@ -104,14 +104,15 @@ export async function performBooleanOperation(operation) {
         const sourceObj = objectsToProcess[objectsToProcess.length - 1];
 
         // Auto-positioning by Fabric from absolute path data
+        // Auto-positioning by Fabric from absolute path data
         const newPath = new fabric.Path(pathData, {
-            fill: sourceObj.fill || '#cccccc',
-            stroke: sourceObj.stroke || '#000000',
-            strokeWidth: sourceObj.strokeWidth || 0,
+            fill: state.defaults.fill,
+            stroke: state.defaults.stroke,
+            strokeWidth: state.defaults.strokeWidth,
             strokeUniform: true,
             scaleX: 1,
             scaleY: 1,
-            opacity: sourceObj.opacity || 1,
+            opacity: 1, // Reset opacity or use default? Usually 1 for new clean shapes
             objectCaching: true,
             shapeType: 'path'
         });

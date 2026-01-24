@@ -13,9 +13,50 @@ export function initInterface() {
     const strokePicker = document.getElementById('defaultStrokeColor');
 
     if (fillPicker) {
-        fillPicker.value = state.defaults.fill;
+        fillPicker.value = (state.defaults.fill === 'transparent') ? '#ffffff' : state.defaults.fill;
         fillPicker.addEventListener('input', (e) => {
             state.defaults.fill = e.target.value;
+            // If user manually picks a color, ensure resizing strike is off (optional, but logical)
+            const strikeDiv = document.getElementById('defaultFillStrike');
+            if (strikeDiv) strikeDiv.style.display = 'none';
+            saveDefaults();
+        });
+
+        // Initialize strike visibility
+        const strikeDiv = document.getElementById('defaultFillStrike');
+        if (state.defaults.fill === 'transparent' && strikeDiv) {
+            strikeDiv.style.display = 'block';
+        }
+
+        // Add RIGHT CLICK listener to toggle fill
+        fillPicker.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+
+            const strikeDiv = document.getElementById('defaultFillStrike');
+            if (!strikeDiv) return;
+
+            const isCurrentlyTransparent = (state.defaults.fill === 'transparent');
+
+            if (isCurrentlyTransparent) {
+                // ENABLE FILL
+                strikeDiv.style.display = 'none';
+
+                if (state.cachedFill && state.cachedFill !== 'transparent') {
+                    state.defaults.fill = state.cachedFill;
+                } else {
+                    state.defaults.fill = '#ffffff';
+                }
+
+                // Update picker visual value
+                fillPicker.value = state.defaults.fill;
+            } else {
+                // DISABLE FILL (Transparent)
+                strikeDiv.style.display = 'block';
+
+                state.cachedFill = state.defaults.fill;
+                state.defaults.fill = 'transparent';
+            }
+
             saveDefaults();
         });
     }

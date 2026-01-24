@@ -21,6 +21,7 @@ export const state = {
     dragStartPoint: null,
     isSnappedToStart: false,
     cachedStrokeWidth: null,
+    cachedFill: null,
     defaults: {
         fill: '#ffffff',
         stroke: '#000000',
