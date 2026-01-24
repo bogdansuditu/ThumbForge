@@ -20,6 +20,18 @@ export function initInterface() {
             const strikeDiv = document.getElementById('defaultFillStrike');
             if (strikeDiv) strikeDiv.style.display = 'none';
             saveDefaults();
+
+            // Apply to active selection
+            if (state.canvas) {
+                const activeObjects = state.canvas.getActiveObjects();
+                if (activeObjects.length > 0) {
+                    activeObjects.forEach(obj => {
+                        obj.set('fill', state.defaults.fill);
+                    });
+                    state.canvas.requestRenderAll();
+                    saveState();
+                }
+            }
         });
 
         // Initialize strike visibility
@@ -49,12 +61,36 @@ export function initInterface() {
 
                 // Update picker visual value
                 fillPicker.value = state.defaults.fill;
+
+                // Sync with selection
+                if (state.canvas) {
+                    const activeObjects = state.canvas.getActiveObjects();
+                    if (activeObjects.length > 0) {
+                        activeObjects.forEach(obj => {
+                            obj.set('fill', state.defaults.fill);
+                        });
+                        state.canvas.requestRenderAll();
+                        saveState();
+                    }
+                }
             } else {
                 // DISABLE FILL (Transparent)
                 strikeDiv.style.display = 'block';
 
                 state.cachedFill = state.defaults.fill;
                 state.defaults.fill = 'transparent';
+
+                // Sync with selection
+                if (state.canvas) {
+                    const activeObjects = state.canvas.getActiveObjects();
+                    if (activeObjects.length > 0) {
+                        activeObjects.forEach(obj => {
+                            obj.set('fill', 'transparent');
+                        });
+                        state.canvas.requestRenderAll();
+                        saveState();
+                    }
+                }
             }
 
             saveDefaults();
@@ -66,6 +102,18 @@ export function initInterface() {
         strokePicker.addEventListener('input', (e) => {
             state.defaults.stroke = e.target.value;
             saveDefaults();
+
+            // Apply to active selection
+            if (state.canvas) {
+                const activeObjects = state.canvas.getActiveObjects();
+                if (activeObjects.length > 0) {
+                    activeObjects.forEach(obj => {
+                        obj.set('stroke', state.defaults.stroke);
+                    });
+                    state.canvas.requestRenderAll();
+                    saveState();
+                }
+            }
         });
 
         // Initialize strike visibility based on default (if already disabled)
@@ -90,23 +138,49 @@ export function initInterface() {
                 strikeDiv.style.display = 'none';
 
                 // Restore from cache, or config default, or hard fallback
-                if (state.cachedStrokeWidth !== null && state.cachedStrokeWidth > 0) {
-                    state.defaults.strokeWidth = state.cachedStrokeWidth;
-                } else {
-                    // Fallback to 2 if cache is empty/invalid
-                    state.defaults.strokeWidth = 2;
+                // Fallback to 2 if cache is empty/invalid
+                state.defaults.strokeWidth = 2;
+
+
+
+                // Sync with selection (Restore width AND color)
+                if (state.canvas) {
+                    const activeObjects = state.canvas.getActiveObjects();
+                    if (activeObjects.length > 0) {
+                        activeObjects.forEach(obj => {
+                            obj.set('strokeWidth', state.defaults.strokeWidth);
+                            // Also ensure stroke color is applied if it was transparent or different
+                            obj.set('stroke', state.defaults.stroke);
+                        });
+                        state.canvas.requestRenderAll();
+                        saveState();
+                    }
                 }
+
             } else {
                 // DISABLE STROKE
                 strikeDiv.style.display = 'block';
 
                 // Cache current width before setting to 0
-                state.cachedStrokeWidth = state.defaults.strokeWidth;
+                if (state.defaults.strokeWidth > 0) {
+                    state.cachedStrokeWidth = state.defaults.strokeWidth;
+                }
                 state.defaults.strokeWidth = 0;
+
+                // Sync with selection
+                if (state.canvas) {
+                    const activeObjects = state.canvas.getActiveObjects();
+                    if (activeObjects.length > 0) {
+                        activeObjects.forEach(obj => {
+                            obj.set('strokeWidth', 0);
+                        });
+                        state.canvas.requestRenderAll();
+                        saveState();
+                    }
+                }
             }
 
             saveDefaults();
-            // console.log(`[Stroke Toggle] Toggled. New Width: ${state.defaults.strokeWidth}, Cached: ${state.cachedStrokeWidth}`);
         });
     }
 }
