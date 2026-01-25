@@ -39,6 +39,8 @@ import {
     deleteLayer,
     duplicateLayer,
     bringToFront,
+    bringForward,
+    sendBackward,
     sendToBack,
     saveImmediately
 } from './project.js';
@@ -216,6 +218,19 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('duplicateLayer').addEventListener('click', duplicateLayer);
     document.getElementById('bringToFront').addEventListener('click', bringToFront);
     document.getElementById('sendToBack').addEventListener('click', sendToBack);
+
+    // Toolbar Layer Ordering
+    const btnToolBringFront = document.getElementById('toolBringToFront');
+    if (btnToolBringFront) btnToolBringFront.addEventListener('click', bringToFront);
+
+    const btnToolBringForward = document.getElementById('toolBringForward');
+    if (btnToolBringForward) btnToolBringForward.addEventListener('click', bringForward);
+
+    const btnToolSendBackward = document.getElementById('toolSendBackward');
+    if (btnToolSendBackward) btnToolSendBackward.addEventListener('click', sendBackward);
+
+    const btnToolSendBack = document.getElementById('toolSendToBack');
+    if (btnToolSendBack) btnToolSendBack.addEventListener('click', sendToBack);
 
     document.getElementById('alignLeft').addEventListener('click', () => alignSelected('left'));
     document.getElementById('alignCenterH').addEventListener('click', () => alignSelected('centerH'));

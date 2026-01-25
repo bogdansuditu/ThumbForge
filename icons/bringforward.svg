@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 2048 2048" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <rect id="Artboard1" x="0" y="0" width="2048" height="2048" style="fill:none;"/>
+    <g id="Artboard11" serif:id="Artboard1">
+        <g id="BringForward" transform="matrix(1.1579,0,0,1.13204,-294.933,-295.502)">
+            <g transform="matrix(1.47926e-16,0.611759,7.18766,8.57258e-17,-1293.6,783.775)">
+                <path d="M1799.87,353.638L1799.87,405.702C1799.87,424.545 1616.02,439.843 1389.57,439.843L842.512,439.843C616.063,439.843 432.216,424.545 432.216,405.702L432.216,353.638C432.216,334.795 616.063,319.497 842.512,319.497L1389.57,319.497C1616.02,319.497 1799.87,334.795 1799.87,353.638Z" style="fill:rgb(235,235,235);fill-opacity:0.65;"/>
+            </g>
+            <g transform="matrix(0.918022,-7.51415e-16,1.05083e-15,-9.86446,-0.55161,4769.24)">
+                <path d="M1799.87,355.601L1799.87,403.739C1799.87,423.666 1629.92,439.843 1420.58,439.843L811.502,439.843C602.168,439.843 432.216,423.666 432.216,403.739L432.216,355.601C432.216,335.674 602.168,319.497 811.502,319.497L1420.58,319.497C1629.92,319.497 1799.87,335.674 1799.87,355.601Z" style="fill:rgb(130,62,255);"/>
+            </g>
+        </g>
+    </g>
+</svg>

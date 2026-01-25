@@ -1162,6 +1162,20 @@ export function checkSelectionForAlignment() {
     }
 
     checkSelectionForBooleanOps();
+    checkSelectionForLayerOrder();
+}
+
+export function checkSelectionForLayerOrder() {
+    const activeObj = state.canvas.getActiveObject();
+    const orderGroup = document.getElementById('layerOrderGroup');
+
+    if (!orderGroup) return;
+
+    if (activeObj) {
+        orderGroup.style.display = 'flex';
+    } else {
+        orderGroup.style.display = 'none';
+    }
 }
 
 export function checkSelectionForBooleanOps() {

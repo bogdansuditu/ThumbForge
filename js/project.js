@@ -404,6 +404,26 @@ export function duplicateLayer(options = {}) {
     });
 }
 
+export function bringForward() {
+    const activeObj = state.canvas.getActiveObject();
+    if (activeObj) {
+        activeObj.bringForward();
+        state.canvas.renderAll();
+        updateLayersList();
+        saveState();
+    }
+}
+
+export function sendBackward() {
+    const activeObj = state.canvas.getActiveObject();
+    if (activeObj) {
+        activeObj.sendBackwards();
+        state.canvas.renderAll();
+        updateLayersList();
+        saveState();
+    }
+}
+
 export function bringToFront() {
     const activeObj = state.canvas.getActiveObject();
     if (activeObj) {
