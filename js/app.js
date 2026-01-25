@@ -68,6 +68,15 @@ window.updatePolygonSides = updatePolygonSides;
 window.updatePolygonRadius = updatePolygonRadius;
 window.updateTransformProperty = updateTransformProperty;
 
+// Convert to curves
+document.getElementById('convertToCurves')?.addEventListener('click', () => {
+    // Close menu
+    document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('active'));
+    import('./booleans.js').then(module => {
+        module.convertSelectedTextToPath();
+    });
+});
+
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {
     const target = e.target;

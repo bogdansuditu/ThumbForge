@@ -184,14 +184,19 @@ select {
 }
 
 .menu-item:hover {
-    background: #007acc;
-    color: white;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.menu-item.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+    cursor: not-allowed;
 }
 
 .menu-divider {
     height: 1px;
-    background: #3e3e3e;
-    margin: 3px 0;
+    background: #333;
+    margin: 4px 0;
 }
 
 .menu-shortcut {

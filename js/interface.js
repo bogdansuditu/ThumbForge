@@ -1321,3 +1321,17 @@ export function confirmFont(font) {
     }
     document.removeEventListener('click', closeFontDropdownOutside);
 }
+
+export function updateContextMenus() {
+    const activeObj = state.canvas.getActiveObject();
+    const convertBtn = document.getElementById('convertToCurves');
+
+    if (!convertBtn) return;
+
+    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+        convertBtn.classList.remove('disabled');
+    } else {
+        convertBtn.classList.add('disabled');
+    }
+}
+

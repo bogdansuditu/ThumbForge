@@ -1,7 +1,7 @@
 import { state, saveDefaults } from './state.js';
 import { AVAILABLE_FONTS } from './config.js';
 import { restoreAutoSave, saveState, saveImmediately } from './project.js';
-import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSelectionForAlignment, updateTransformInputs } from './interface.js';
+import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSelectionForAlignment, updateTransformInputs, updateContextMenus } from './interface.js';
 import { handleUniformCorners, handleObjectMoving, handleObjectRotating, handlePathClick, handlePathMove, handlePathUp, finishPath, handleObjectUp } from './canvas-events.js';
 import { applyBlur } from './shapes.js';
 import { checkLayerLevelBlurSupport } from './utils.js';
@@ -36,16 +36,19 @@ export function initCanvas() {
         state.backgroundSelected = false;
         updatePropertiesPanel();
         checkSelectionForAlignment();
+        updateContextMenus();
     });
     state.canvas.on('selection:updated', () => {
         state.backgroundSelected = false;
         updatePropertiesPanel();
         checkSelectionForAlignment();
+        updateContextMenus();
     });
     state.canvas.on('selection:cleared', () => {
         state.backgroundSelected = false;
         clearPropertiesPanel();
         checkSelectionForAlignment();
+        updateContextMenus();
     });
     state.canvas.on('object:modified', () => {
         saveState();
