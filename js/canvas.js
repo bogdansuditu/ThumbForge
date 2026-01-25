@@ -43,6 +43,7 @@ export function initCanvas() {
         updatePropertiesPanel();
         checkSelectionForAlignment();
         updateContextMenus();
+        updateLayersList();
     });
     state.canvas.on('selection:updated', (e) => {
         state.backgroundSelected = false;
@@ -54,6 +55,7 @@ export function initCanvas() {
         updatePropertiesPanel();
         checkSelectionForAlignment();
         updateContextMenus();
+        updateLayersList();
     });
     state.canvas.on('selection:cleared', () => {
         state.backgroundSelected = false;
@@ -61,6 +63,7 @@ export function initCanvas() {
         clearPropertiesPanel();
         checkSelectionForAlignment();
         updateContextMenus();
+        updateLayersList();
     });
     state.canvas.on('object:modified', () => {
         saveState();

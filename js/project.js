@@ -378,7 +378,6 @@ export function duplicateLayer(options = {}) {
     // Custom properties to preserve
     const customProps = [
         'blurAmount', 'shadow', 'cornerRadius', 'uniformRadius',
-        'starSpikes', 'outerRadius', 'innerRadius',
         'polygonSides', 'polygonRadius', 'shapeType',
         'imgStroke', 'imgStrokeWidth',
         'lockMovementX', 'lockMovementY', 'lockScalingX', 'lockScalingY', 'lockRotation',
