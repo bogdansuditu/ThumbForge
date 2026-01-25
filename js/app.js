@@ -23,6 +23,7 @@ import {
     updateBlur,
     toggleShadow,
     updateShadowProperty,
+    updateTransformProperty,
     initInterface
 } from './interface.js';
 import {
@@ -63,7 +64,9 @@ window.updateStarPoints = updateStarPoints;
 window.updateStarOuterRadius = updateStarOuterRadius;
 window.updateStarInnerRadius = updateStarInnerRadius;
 window.updatePolygonSides = updatePolygonSides;
+window.updatePolygonSides = updatePolygonSides;
 window.updatePolygonRadius = updatePolygonRadius;
+window.updateTransformProperty = updateTransformProperty;
 
 // Keyboard Shortcuts
 document.addEventListener('keydown', (e) => {

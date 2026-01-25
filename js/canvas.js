@@ -1,7 +1,7 @@
 import { state, saveDefaults } from './state.js';
 import { AVAILABLE_FONTS } from './config.js';
 import { restoreAutoSave, saveState, saveImmediately } from './project.js';
-import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSelectionForAlignment } from './interface.js';
+import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSelectionForAlignment, updateTransformInputs } from './interface.js';
 import { handleUniformCorners, handleObjectMoving, handleObjectRotating, handlePathClick, handlePathMove, handlePathUp, finishPath, handleObjectUp } from './canvas-events.js';
 import { applyBlur } from './shapes.js';
 import { checkLayerLevelBlurSupport } from './utils.js';
@@ -52,12 +52,22 @@ export function initCanvas() {
         updateLayersList();
     });
 
-    // Handle uniform corner radius on scaling
-    state.canvas.on('object:scaling', handleUniformCorners);
+    // Handle uniform corner radius on scaling and update inputs
+    state.canvas.on('object:scaling', (e) => {
+        handleUniformCorners(e);
+        updateTransformInputs();
+    });
 
-    // Handle constraints (Shift+Move, Shift+Rotate)
-    state.canvas.on('object:moving', handleObjectMoving);
-    state.canvas.on('object:rotating', handleObjectRotating);
+    // Handle constraints (Shift+Move, Shift+Rotate) and update inputs
+    state.canvas.on('object:moving', (e) => {
+        handleObjectMoving(e);
+        updateTransformInputs();
+    });
+
+    state.canvas.on('object:rotating', (e) => {
+        handleObjectRotating(e);
+        updateTransformInputs();
+    });
 
     // Clean up overlays when object is removed
     state.canvas.on('object:removed', function (e) {

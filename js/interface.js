@@ -761,6 +761,56 @@ export function updatePropertiesPanel() {
         `;
     }
 
+    // Transform Section
+    const x = Math.round(activeObj.left);
+    const y = Math.round(activeObj.top);
+    const w = Math.round(activeObj.getScaledWidth());
+    const h = Math.round(activeObj.getScaledHeight());
+    const rotation = Math.round(activeObj.angle % 360);
+
+    html += `
+        <div class="panel-header" style="margin-top: 0; padding-top: 0;">
+            <h3>Transform</h3>
+        </div>
+        
+        <div class="property-group" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label class="property-label" style="width: auto;">X</label>
+                <input type="number" id="prop-x" class="property-input" value="${x}" 
+                       oninput="updateTransformProperty('x', this.value)">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label class="property-label" style="width: auto;">Y</label>
+                <input type="number" id="prop-y" class="property-input" value="${y}" 
+                       oninput="updateTransformProperty('y', this.value)">
+            </div>
+        </div>
+
+        <div class="property-group" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label class="property-label" style="width: auto;">W</label>
+                <input type="number" id="prop-w" class="property-input" value="${w}" 
+                       oninput="updateTransformProperty('w', this.value)" min="1">
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label class="property-label" style="width: auto;">H</label>
+                <input type="number" id="prop-h" class="property-input" value="${h}" 
+                       oninput="updateTransformProperty('h', this.value)" min="1">
+            </div>
+        </div>
+
+        <div class="property-group">
+            <label class="property-label">Rotation</label>
+            <div style="display: flex; align-items: center; gap: 4px;">
+                 <input type="number" id="prop-rotation" class="property-input" value="${rotation}" 
+                       oninput="updateTransformProperty('rotation', this.value)">
+                 <span style="color: #666; font-size: 10px;">°</span>
+            </div>
+        </div>
+        
+        <div class="property-separator"></div>
+    `;
+
     // Effects Section (Common)
     html += `
             <div class="panel-header">
@@ -835,6 +885,63 @@ export function updatePropertiesPanel() {
 
 export function clearPropertiesPanel() {
     document.getElementById('propertiesPanel').innerHTML = '<p class="empty-state">Select a layer to edit properties</p>';
+}
+
+export function updateTransformInputs() {
+    if (!state.canvas) return;
+    const activeObj = state.canvas.getActiveObject();
+    if (!activeObj) return;
+
+    // Avoid updating if the user is currently typing in the input (active element check)
+    // But we need to update if the canvas event triggered this.
+    // However, if we update while typing, it might be annoying.
+    // Usually, canvas events 'object:modified' happen after drag end, but 'object:moving' happen during drag.
+    // If dragging on canvas, input is not focused.
+    // If typing in input, we are irrelevant to this function usually (cycle).
+
+    const x = Math.round(activeObj.left);
+    const y = Math.round(activeObj.top);
+    const w = Math.round(activeObj.getScaledWidth());
+    const h = Math.round(activeObj.getScaledHeight());
+    const rotation = Math.round(activeObj.angle % 360);
+
+    const elX = document.getElementById('prop-x');
+    const elY = document.getElementById('prop-y');
+    const elW = document.getElementById('prop-w');
+    const elH = document.getElementById('prop-h');
+    const elRot = document.getElementById('prop-rotation');
+
+    if (elX && document.activeElement !== elX) elX.value = x;
+    if (elY && document.activeElement !== elY) elY.value = y;
+    if (elW && document.activeElement !== elW) elW.value = w;
+    if (elH && document.activeElement !== elH) elH.value = h;
+    if (elRot && document.activeElement !== elRot) elRot.value = rotation;
+}
+
+export function updateTransformProperty(prop, value) {
+    const activeObj = state.canvas.getActiveObject();
+    if (!activeObj) return;
+
+    value = parseFloat(value);
+    if (isNaN(value)) return;
+
+    if (prop === 'x') {
+        activeObj.set('left', value);
+    } else if (prop === 'y') {
+        activeObj.set('top', value);
+    } else if (prop === 'rotation') {
+        activeObj.set('angle', value);
+    } else if (prop === 'w') {
+        if (value <= 0) return;
+        activeObj.scaleToWidth(value);
+    } else if (prop === 'h') {
+        if (value <= 0) return;
+        activeObj.scaleToHeight(value);
+    }
+
+    activeObj.setCoords();
+    state.canvas.requestRenderAll();
+    saveState();
 }
 
 export function updateObjectProperty(property, value) {
