@@ -32,20 +32,32 @@ export function initCanvas() {
     setupLayerLevelBlur();
 
     // Event listeners
-    state.canvas.on('selection:created', () => {
+    state.canvas.on('selection:created', (e) => {
         state.backgroundSelected = false;
+        // If selection comes from canvas interaction, reset deep selection to top-level object
+        if (e.selected && e.selected.length === 1) {
+            state.activeLayerObject = e.selected[0];
+        } else {
+            state.activeLayerObject = null;
+        }
         updatePropertiesPanel();
         checkSelectionForAlignment();
         updateContextMenus();
     });
-    state.canvas.on('selection:updated', () => {
+    state.canvas.on('selection:updated', (e) => {
         state.backgroundSelected = false;
+        if (e.selected && e.selected.length === 1) {
+            state.activeLayerObject = e.selected[0];
+        } else {
+            state.activeLayerObject = null;
+        }
         updatePropertiesPanel();
         checkSelectionForAlignment();
         updateContextMenus();
     });
     state.canvas.on('selection:cleared', () => {
         state.backgroundSelected = false;
+        state.activeLayerObject = null;
         clearPropertiesPanel();
         checkSelectionForAlignment();
         updateContextMenus();

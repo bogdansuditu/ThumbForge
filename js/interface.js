@@ -233,7 +233,7 @@ export function updateLayersList() {
             // Store reference/id for D&D
             layerItem.dataset.id = obj.uid || (obj.uid = Math.random().toString(36).substr(2, 9));
 
-            if (state.canvas.getActiveObjects().includes(obj) || state.canvas.getActiveObject() === obj) {
+            if (state.canvas.getActiveObjects().includes(obj) || state.canvas.getActiveObject() === obj || state.activeLayerObject === obj) {
                 layerItem.classList.add('active');
             }
 
@@ -311,6 +311,9 @@ export function updateLayersList() {
             layerItem.querySelector('.visibility-btn').addEventListener('click', (e) => {
                 e.stopPropagation();
                 obj.visible = !obj.visible;
+                if (obj.group) {
+                    obj.group.dirty = true;
+                }
                 state.canvas.renderAll();
                 updateLayersList();
             });
@@ -334,6 +337,7 @@ export function updateLayersList() {
                 if (e.target.closest('.layer-control-btn') || e.target.classList.contains('group-toggle') || e.target.tagName === 'INPUT') return;
 
                 state.backgroundSelected = false;
+                state.activeLayerObject = obj; // Set specifically this object
 
                 // Handle Shift+Click for multi-selection (simple version)
                 // For nested groups, multi-select is tricky. For now, just Select the single object.
@@ -342,11 +346,11 @@ export function updateLayersList() {
                 // To support deep selection, we need to handle specific selection logic.
 
                 if (parentGroup) {
-                    // Selecting an item inside a group is tricky in Fabric 5. 
+                    // Selecting an item inside a group is tricky in Fabric 5.
                     // Usually you modify the group selection or select the group.
                     // For simplicity: Select the PARENT GROUP if logic dictates, OR select the item but drag the whole group.
                     // Let's settle on: Selecting item in layer list selects the TOP LEVEL object (Group) it belongs to, unless we implement deep diving.
-                    // But user wants to reorder inside group? 
+                    // But user wants to reorder inside group?
                     // If we can reorder, we must be able to select?
                     // Actually, Fabric doesn't easily support selecting a child of a group on canvas without entering 'group editing' mode (not native).
                     // So, let's just highlight the item in the list, but on Canvas select the Top Parent Group.
@@ -379,11 +383,11 @@ export function updateLayersList() {
                 // So clicking a child layer will select the Group.
 
                 // Let's traverse up to top level for selection
-                // Since we don't have parent links easily without search, 
+                // Since we don't have parent links easily without search,
                 // we rely on the fact that 'obj' passed here IS a top level object if parentGroup is null.
 
                 if (parentGroup) {
-                    // It's a child. Select the parent group.
+                    // It's a child. Select the parent group visually on canvas
                     state.canvas.setActiveObject(parentGroup);
                 } else {
                     state.canvas.setActiveObject(obj);
@@ -501,7 +505,7 @@ export function updatePropertiesPanel() {
         return;
     }
 
-    const activeObj = state.canvas.getActiveObject();
+    const activeObj = state.activeLayerObject || state.canvas.getActiveObject();
     if (!activeObj) {
         clearPropertiesPanel();
         return;
@@ -544,7 +548,7 @@ export function updatePropertiesPanel() {
                         ${FONT_GROUPS.map(group => `
                             <div class="font-group-header" style="padding: 4px 8px; font-size: 0.75em; font-weight: bold; color: #888; background: #2a2a2a; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0;">${group.category}</div>
                             ${group.fonts.map(font =>
-            `<div class="custom-option ${activeObj.fontFamily === font ? 'selected' : ''}" 
+            `<div class="custom-option ${activeObj.fontFamily === font ? 'selected' : ''}"
                                       style="font-family: '${font}'"
                                       onclick="confirmFont('${font}')"
                                       onmouseenter="previewFont('${font}')"
@@ -559,16 +563,16 @@ export function updatePropertiesPanel() {
 
             <div class="property-group full-width">
                  <div class="style-btn-group">
-                    <button class="style-btn ${activeObj.fontWeight === 'bold' ? 'active' : ''}" 
-                            onclick="toggleFontWeight()" 
+                    <button class="style-btn ${activeObj.fontWeight === 'bold' ? 'active' : ''}"
+                            onclick="toggleFontWeight()"
                             title="Bold">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M6 4h8a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
                             <path d="M6 12h9a4 4 0 014 4 4 4 0 01-4 4H6z"></path>
                         </svg>
                     </button>
-                    <button class="style-btn ${activeObj.fontStyle === 'italic' ? 'active' : ''}" 
-                            onclick="toggleFontStyle()" 
+                    <button class="style-btn ${activeObj.fontStyle === 'italic' ? 'active' : ''}"
+                            onclick="toggleFontStyle()"
                             title="Italic">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="19" y1="4" x2="10" y2="4"></line>
@@ -577,8 +581,8 @@ export function updatePropertiesPanel() {
                         </svg>
                     </button>
                     <div style="width: 1px; background: #222; margin: 2px 4px;"></div>
-                    <button class="style-btn ${activeObj.textAlign === 'left' ? 'active' : ''}" 
-                            onclick="updateObjectProperty('textAlign', 'left')" 
+                    <button class="style-btn ${activeObj.textAlign === 'left' ? 'active' : ''}"
+                            onclick="updateObjectProperty('textAlign', 'left')"
                             title="Align Left">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="17" y1="10" x2="3" y2="10"></line>
@@ -587,8 +591,8 @@ export function updatePropertiesPanel() {
                             <line x1="17" y1="18" x2="3" y2="18"></line>
                         </svg>
                     </button>
-                    <button class="style-btn ${activeObj.textAlign === 'center' ? 'active' : ''}" 
-                            onclick="updateObjectProperty('textAlign', 'center')" 
+                    <button class="style-btn ${activeObj.textAlign === 'center' ? 'active' : ''}"
+                            onclick="updateObjectProperty('textAlign', 'center')"
                             title="Align Center">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="21" y1="6" x2="3" y2="6"></line>
@@ -597,8 +601,8 @@ export function updatePropertiesPanel() {
                             <line x1="21" y1="18" x2="3" y2="18"></line>
                         </svg>
                     </button>
-                    <button class="style-btn ${activeObj.textAlign === 'right' ? 'active' : ''}" 
-                            onclick="updateObjectProperty('textAlign', 'right')" 
+                    <button class="style-btn ${activeObj.textAlign === 'right' ? 'active' : ''}"
+                            onclick="updateObjectProperty('textAlign', 'right')"
                             title="Align Right">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="21" y1="10" x2="7" y2="10"></line>
@@ -654,8 +658,8 @@ export function updatePropertiesPanel() {
              <div class="property-group">
                  <div style="display: flex; align-items: center; justify-content: space-between; padding-right: 5px;">
                      <label class="property-label">Fill</label>
-                     <input type="checkbox" title="Enable Fill" 
-                            ${activeObj.fill !== 'transparent' ? 'checked' : ''} 
+                     <input type="checkbox" title="Enable Fill"
+                            ${activeObj.fill !== 'transparent' ? 'checked' : ''}
                             onchange="updateObjectProperty('fill', this.checked ? '#000000' : 'transparent')">
                  </div>
                   <div class="color-picker-row">
@@ -669,7 +673,7 @@ export function updatePropertiesPanel() {
                             ${activeObj.fill === 'transparent' ? 'disabled' : ''}>
                  </div>
              </div>
- 
+
              <div class="property-group">
                  <label class="property-label">Stroke Width</label>
                  <div class="range-container">
@@ -678,7 +682,7 @@ export function updatePropertiesPanel() {
                      <span hidden>${activeObj.strokeWidth || 0}px</span>
                  </div>
              </div>
- 
+
              <div class="property-group">
                  <label class="property-label">Stroke Color</label>
                   <div class="color-picker-row">
@@ -828,16 +832,16 @@ export function updatePropertiesPanel() {
         <div class="panel-header" style="margin-top: 0; padding-top: 0;">
             <h3>Transform</h3>
         </div>
-        
+
         <div class="property-group" style="grid-template-columns: 1fr 1fr; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label class="property-label" style="width: auto;">X</label>
-                <input type="number" id="prop-x" class="property-input" value="${x}" 
+                <input type="number" id="prop-x" class="property-input" value="${x}"
                        oninput="updateTransformProperty('x', this.value)">
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label class="property-label" style="width: auto;">Y</label>
-                <input type="number" id="prop-y" class="property-input" value="${y}" 
+                <input type="number" id="prop-y" class="property-input" value="${y}"
                        oninput="updateTransformProperty('y', this.value)">
             </div>
         </div>
@@ -845,12 +849,12 @@ export function updatePropertiesPanel() {
         <div class="property-group" style="grid-template-columns: 1fr 1fr; gap: 8px;">
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label class="property-label" style="width: auto;">W</label>
-                <input type="number" id="prop-w" class="property-input" value="${w}" 
+                <input type="number" id="prop-w" class="property-input" value="${w}"
                        oninput="updateTransformProperty('w', this.value)" min="1">
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
                 <label class="property-label" style="width: auto;">H</label>
-                <input type="number" id="prop-h" class="property-input" value="${h}" 
+                <input type="number" id="prop-h" class="property-input" value="${h}"
                        oninput="updateTransformProperty('h', this.value)" min="1">
             </div>
         </div>
@@ -858,12 +862,12 @@ export function updatePropertiesPanel() {
         <div class="property-group">
             <label class="property-label">Rotation</label>
             <div style="display: flex; align-items: center; gap: 4px;">
-                 <input type="number" id="prop-rotation" class="property-input" value="${rotation}" 
+                 <input type="number" id="prop-rotation" class="property-input" value="${rotation}"
                        oninput="updateTransformProperty('rotation', this.value)">
                  <span style="color: #666; font-size: 10px;">°</span>
             </div>
         </div>
-        
+
         <div class="property-separator"></div>
     `;
 
@@ -945,7 +949,7 @@ export function clearPropertiesPanel() {
 
 export function updateTransformInputs() {
     if (!state.canvas) return;
-    const activeObj = state.canvas.getActiveObject();
+    const activeObj = state.activeLayerObject || state.canvas.getActiveObject();
     if (!activeObj) return;
 
     // Avoid updating if the user is currently typing in the input (active element check)
@@ -975,7 +979,7 @@ export function updateTransformInputs() {
 }
 
 export function updateTransformProperty(prop, value) {
-    const activeObj = state.canvas.getActiveObject();
+    const activeObj = state.activeLayerObject || state.canvas.getActiveObject();
     if (!activeObj) return;
 
     value = parseFloat(value);
@@ -996,6 +1000,9 @@ export function updateTransformProperty(prop, value) {
     }
 
     activeObj.setCoords();
+    if (activeObj.group) {
+        activeObj.group.dirty = true;
+    }
     state.canvas.requestRenderAll();
     saveState();
 }
@@ -1147,7 +1154,7 @@ function findParentInGroup(group, objToFind) {
 }
 
 export function updateObjectProperty(property, value) {
-    const activeObj = state.canvas.getActiveObject();
+    const activeObj = state.activeLayerObject || state.canvas.getActiveObject();
     if (!activeObj) return;
 
     // Helper to apply to object or recursively to group children
@@ -1160,26 +1167,30 @@ export function updateObjectProperty(property, value) {
             return;
         }
 
-        // Special handling for visual properties on Groups
-        // We want to apply Fill/Stroke to children, not the group container itself
+        // Only propagate if it's a Group AND we selected the group itself (activeLayerObject is the group)
+        // If we selected a child, we DON'T propagate.
+        // Wait, current logic propagates if obj.type is group.
+        // If activeObj IS the group, we want propagation.
+        // If activeObj IS a child, it is NOT a group (usually), so it won't propagate.
+        // But what if we selected a Group that is inside another Group?
+        // We probably want propagation there too.
+
         const visualProps = ['fill', 'stroke', 'strokeWidth', 'opacity', 'blurAmount', 'shadow'];
 
         if (obj.type === 'group' && visualProps.includes(prop)) {
             // Apply to all children
             obj.getObjects().forEach(child => applyToObj(child, prop, val));
-            // Also set on group? Usually no for fill/stroke.
-            // For Opacity, setting on Group affects whole group composite.
-            if (prop === 'opacity') {
-                obj.set(prop, val);
-            }
-            // For Shadow, same.
-            if (prop === 'shadow') {
+            if (prop === 'opacity' || prop === 'shadow') {
                 obj.set(prop, val);
             }
             return;
         }
 
         obj.set(prop, val);
+
+        // Mark parent group as dirty if needed
+        if (obj.group) obj.group.dirty = true;
+
 
         // ... specific logic (strokeWidth defaults, etc) ...
         if (prop === 'strokeWidth' && (obj.type === 'rect' || obj.type === 'circle' || obj.type === 'triangle' || obj.type === 'polygon' || obj.type === 'path' || obj.type === 'line' || obj.type === 'polyline' || obj.type === 'i-text' || obj.type === 'text')) {

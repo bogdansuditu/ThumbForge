@@ -336,9 +336,19 @@ export function clearCanvas() {
 }
 
 export function deleteLayer() {
-    const activeObj = state.canvas.getActiveObject();
+    const activeObj = state.activeLayerObject || state.canvas.getActiveObject();
     if (activeObj) {
-        if (activeObj.type === 'activeSelection') {
+        if (activeObj.group) {
+            // Remove from group
+            activeObj.group.removeWithUpdate(activeObj);
+            state.canvas.renderAll();
+            // If group is empty, remove it? Fabric might handle empty groups or we might want to keep it.
+            if (activeObj.group.size() === 0) {
+                state.canvas.remove(activeObj.group);
+            }
+            state.activeLayerObject = null;
+        } else if (activeObj.type === 'activeSelection') {
+            // ... existing activeSelection logic ...
             activeObj.getObjects().forEach(obj => {
                 state.canvas.remove(obj);
             });
@@ -347,6 +357,7 @@ export function deleteLayer() {
             state.canvas.remove(activeObj);
         }
         state.canvas.renderAll();
+        updateLayersList();
         saveState();
     }
 }
@@ -364,7 +375,74 @@ export function duplicateLayer(options = {}) {
 
     const config = { ...defaultOptions, ...options };
 
-    // Simplified clone
+    // Custom properties to preserve
+    const customProps = [
+        'blurAmount', 'shadow', 'cornerRadius', 'uniformRadius',
+        'starSpikes', 'outerRadius', 'innerRadius',
+        'polygonSides', 'polygonRadius', 'shapeType',
+        'imgStroke', 'imgStrokeWidth',
+        'lockMovementX', 'lockMovementY', 'lockScalingX', 'lockScalingY', 'lockRotation',
+        'originX', 'originY'
+    ];
+
+    // If Active Selection, we handle duplicates individually to avoid Group cloning issues
+    if (activeObj.type === 'activeSelection') {
+        const objects = activeObj.getObjects();
+        const center = activeObj.getCenterPoint();
+
+        // Target position (default or provided)
+        const targetLeft = config.left !== undefined ? config.left : center.x + config.offset;
+        const targetTop = config.top !== undefined ? config.top : center.y + config.offset;
+
+        // Deselect current selection if needed
+        if (config.selectCopy) {
+            state.canvas.discardActiveObject();
+        }
+
+        const clones = [];
+        let loadedCount = 0;
+
+        // Iterate original objects
+        objects.forEach(obj => {
+            obj.clone((cloned) => {
+                // Calculate offset from original center
+                // In ActiveSelection, obj.left/top are typically relative to the selection origin (center)
+                const dx = obj.left;
+                const dy = obj.top;
+
+                cloned.set({
+                    left: targetLeft + dx,
+                    top: targetTop + dy,
+                    evented: true,
+                    name: obj.name ? obj.name + ' (Copy)' : undefined
+                });
+
+                if (cloned.type === 'image' && cloned.cornerRadius > 0) {
+                    applyImageCornerRadius(cloned);
+                }
+
+                state.canvas.add(cloned);
+                clones.push(cloned);
+                loadedCount++;
+
+                // If all finished
+                if (loadedCount === objects.length) {
+                    if (config.selectCopy) {
+                        const sel = new fabric.ActiveSelection(clones, {
+                            canvas: state.canvas,
+                        });
+                        state.canvas.setActiveObject(sel);
+                    }
+                    state.canvas.renderAll();
+                    updateLayersList();
+                    saveState();
+                }
+            }, customProps);
+        });
+        return;
+    }
+
+    // Default Single Object Logic
     activeObj.clone((cloned) => {
         if (config.selectCopy) {
             state.canvas.discardActiveObject();
@@ -380,15 +458,7 @@ export function duplicateLayer(options = {}) {
             name: activeObj.name ? activeObj.name + ' (Copy)' : undefined
         });
 
-        if (activeObj.type === 'activeSelection') {
-            cloned.canvas = state.canvas;
-            cloned.forEachObject((obj) => {
-                state.canvas.add(obj);
-            });
-            cloned.setCoords();
-        } else {
-            state.canvas.add(cloned);
-        }
+        state.canvas.add(cloned);
 
         if (cloned.type === 'image' && cloned.cornerRadius > 0) {
             applyImageCornerRadius(cloned);
@@ -401,7 +471,7 @@ export function duplicateLayer(options = {}) {
         state.canvas.renderAll();
         updateLayersList();
         saveState();
-    });
+    }, customProps);
 }
 
 export function bringForward() {
