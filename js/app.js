@@ -42,6 +42,8 @@ import {
     bringForward,
     sendBackward,
     sendToBack,
+    groupSelection,
+    ungroupSelection,
     saveImmediately
 } from './project.js';
 import { performBooleanOperation } from './booleans.js';
@@ -143,6 +145,17 @@ document.addEventListener('keydown', (e) => {
         sendToBack();
     }
 
+    // Grouping Shortcuts
+    if ((e.ctrlKey || e.metaKey) && e.key === 'g' && !e.shiftKey) {
+        e.preventDefault();
+        groupSelection();
+    }
+
+    if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'g') {
+        e.preventDefault();
+        ungroupSelection();
+    }
+
     if (!activeObj || !activeObj.isEditing) {
         if (e.key === 'v') setTool('select');
         if (e.key === 'm') setTool('move');
@@ -231,6 +244,19 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnToolSendBack = document.getElementById('toolSendToBack');
     if (btnToolSendBack) btnToolSendBack.addEventListener('click', sendToBack);
+
+    // Grouping Menu Items
+    const btnGroup = document.getElementById('groupLayers');
+    if (btnGroup) btnGroup.addEventListener('click', () => {
+        document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('active'));
+        groupSelection();
+    });
+
+    const btnUngroup = document.getElementById('ungroupLayers');
+    if (btnUngroup) btnUngroup.addEventListener('click', () => {
+        document.querySelectorAll('.menu-content').forEach(m => m.classList.remove('active'));
+        ungroupSelection();
+    });
 
     document.getElementById('alignLeft').addEventListener('click', () => alignSelected('left'));
     document.getElementById('alignCenterH').addEventListener('click', () => alignSelected('centerH'));

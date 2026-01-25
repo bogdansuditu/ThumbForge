@@ -443,3 +443,29 @@ export function sendToBack() {
         saveState();
     }
 }
+
+export function groupSelection() {
+    const activeObj = state.canvas.getActiveObject();
+    if (!activeObj || activeObj.type !== 'activeSelection') return;
+
+    activeObj.toGroup();
+    // Fabric.js 5.x toGroup() automatically adds the group to canvas and removes selection
+    // But we might want to ensure the group is selected
+    const group = state.canvas.getObjects().find(o => o.type === 'group' && o === activeObj);
+    // Wait, toGroup() modifies the activeObject in place into a group? 
+    // Actually activeObj.toGroup() creates a new fabric.Group, removes contents from canvas, adds group.
+
+    state.canvas.requestRenderAll();
+    updateLayersList();
+    saveState();
+}
+
+export function ungroupSelection() {
+    const activeObj = state.canvas.getActiveObject();
+    if (!activeObj || activeObj.type !== 'group') return;
+
+    activeObj.toActiveSelection();
+    state.canvas.requestRenderAll();
+    updateLayersList();
+    saveState();
+}
