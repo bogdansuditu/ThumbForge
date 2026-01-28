@@ -2,8 +2,18 @@ import { state } from './state.js';
 import { applyImageCornerRadius } from './shapes.js';
 import { saveState } from './project.js';
 import { AVAILABLE_FONTS } from './config.js';
+import { enterNodeEditingMode, exitNodeEditingMode } from './node-editor.js';
 
 export function setTool(tool) {
+    // If we are leaving node-edit mode
+    if (state.currentTool === 'node-edit' && tool !== 'node-edit') {
+        try {
+            exitNodeEditingMode();
+        } catch (e) {
+            console.error("Failed to exit node edit mode:", e);
+        }
+    }
+
     state.currentTool = tool;
     document.querySelectorAll('.tool-btn').forEach(btn => {
         btn.classList.remove('active');
@@ -19,8 +29,16 @@ export function setTool(tool) {
     }
 
     if (state.canvas) {
+        // Default selection logic
         state.canvas.selection = (tool === 'select' || tool === 'move');
         state.canvas.defaultCursor = (tool === 'select' || tool === 'move') ? 'default' : 'crosshair';
+
+        // Node Edit specific overrides
+        if (tool === 'node-edit') {
+            state.canvas.selection = false;
+            state.canvas.defaultCursor = 'default';
+            enterNodeEditingMode();
+        }
     }
 
     if (tool === 'text') {

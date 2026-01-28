@@ -161,6 +161,7 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'm') setTool('move');
         if (e.key === 't') setTool('text');
         if (e.key === 'l') setTool('line');
+        if (e.key === 'a') setTool('node-edit');
     }
 });
 
