@@ -993,10 +993,14 @@ export function updateTransformProperty(prop, value) {
         activeObj.set('angle', value);
     } else if (prop === 'w') {
         if (value <= 0) return;
-        activeObj.scaleToWidth(value);
+        // activeObj.scaleToWidth(value); // Original: Conserves aspect ratio
+        // New: Allow stretching (independent scale)
+        activeObj.set('scaleX', value / activeObj.width);
     } else if (prop === 'h') {
         if (value <= 0) return;
-        activeObj.scaleToHeight(value);
+        // activeObj.scaleToHeight(value); // Original: Conserves aspect ratio
+        // New: Allow stretching (independent scale)
+        activeObj.set('scaleY', value / activeObj.height);
     }
 
     activeObj.setCoords();
