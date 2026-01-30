@@ -4,6 +4,7 @@ export const state = {
     currentTool: 'select',
     history: [],
     historyStep: -1,
+    historyLocked: false,
     isDrawingPath: false,
     pathPoints: [],
     tempPathLine: null,

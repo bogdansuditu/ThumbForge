@@ -1,13 +1,13 @@
 import { state } from './state.js';
-import { MAX_HISTORY } from './config.js';
+import { MAX_HISTORY, CUSTOM_PROPS } from './config.js';
 import { updateLayersList, clearPropertiesPanel } from './interface.js';
 import { applyImageCornerRadius, applyBlur } from './shapes.js';
 import { updateCanvasDimensions, applyBackgroundColor } from './canvas.js';
 import { setTool } from './tools.js';
 
 export function saveState() {
-    if (!state.canvas) return;
-    const json = JSON.stringify(state.canvas.toJSON());
+    if (!state.canvas || state.historyLocked) return;
+    const json = JSON.stringify(state.canvas.toJSON(CUSTOM_PROPS));
 
     if (state.historyStep < state.history.length - 1) {
         state.history = state.history.slice(0, state.historyStep + 1);
@@ -39,10 +39,11 @@ export function redo() {
 }
 
 export function loadState(jsonState) {
+    state.historyLocked = true;
     state.canvas.loadFromJSON(jsonState, () => {
         const objects = state.canvas.getObjects();
-        const oldBgObjects = objects.filter(obj => obj.isBackground);
-        oldBgObjects.forEach(obj => state.canvas.remove(obj));
+        // const oldBgObjects = objects.filter(obj => obj.isBackground);
+        // oldBgObjects.forEach(obj => state.canvas.remove(obj));
 
         objects.forEach(obj => {
             if (obj.type === 'image' && obj.cornerRadius > 0) {
@@ -53,6 +54,7 @@ export function loadState(jsonState) {
         state.canvas.renderAll();
         updateLayersList();
         clearPropertiesPanel();
+        state.historyLocked = false;
     });
 }
 
@@ -70,7 +72,7 @@ export function autoSave() {
                 backgroundColor: state.backgroundColor,
                 backgroundOpacity: state.backgroundOpacity,
                 timestamp: Date.now(),
-                objects: state.canvas.toJSON(['name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
+                objects: state.canvas.toJSON(CUSTOM_PROPS)
             };
 
             localStorage.setItem('thumbforge-autosave', JSON.stringify(projectData));
@@ -107,8 +109,8 @@ export function restoreAutoSave() {
 
         state.canvas.loadFromJSON(projectData.objects, () => {
             const objects = state.canvas.getObjects();
-            const oldBgObjects = objects.filter(obj => obj.isBackground);
-            oldBgObjects.forEach(obj => state.canvas.remove(obj));
+            // const oldBgObjects = objects.filter(obj => obj.isBackground);
+            // oldBgObjects.forEach(obj => state.canvas.remove(obj));
 
             objects.forEach(obj => {
                 if (obj.type === 'image' && obj.cornerRadius > 0) {
@@ -144,7 +146,7 @@ export function saveImmediately() {
             backgroundColor: state.backgroundColor,
             backgroundOpacity: state.backgroundOpacity,
             timestamp: Date.now(),
-            objects: state.canvas.toJSON(['isBackground', 'name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount', 'blurShadow'])
+            objects: state.canvas.toJSON(CUSTOM_PROPS)
         };
 
         localStorage.setItem('thumbforge-autosave', JSON.stringify(projectData));
@@ -177,7 +179,7 @@ export function saveProject() {
         canvasHeight: state.canvas.height,
         backgroundColor: state.backgroundColor,
         backgroundOpacity: state.backgroundOpacity,
-        objects: state.canvas.toJSON(['name', 'starSpikes', 'outerRadius', 'innerRadius', 'polygonSides', 'polygonRadius', 'shapeType', 'uniformRadius', 'cornerRadius', 'imgStrokeWidth', 'imgStroke', 'blurAmount'])
+        objects: state.canvas.toJSON(CUSTOM_PROPS)
     };
 
     const dataStr = JSON.stringify(projectData, null, 2);
@@ -224,8 +226,8 @@ export function loadProject() {
 
                 state.canvas.loadFromJSON(projectData.objects, () => {
                     const objects = state.canvas.getObjects();
-                    const oldBgObjects = objects.filter(obj => obj.isBackground);
-                    oldBgObjects.forEach(obj => state.canvas.remove(obj));
+                    // const oldBgObjects = objects.filter(obj => obj.isBackground);
+                    // oldBgObjects.forEach(obj => state.canvas.remove(obj));
 
                     objects.forEach(obj => {
                         if (obj.type === 'image' && obj.cornerRadius > 0) {
@@ -376,13 +378,7 @@ export function duplicateLayer(options = {}) {
     const config = { ...defaultOptions, ...options };
 
     // Custom properties to preserve
-    const customProps = [
-        'blurAmount', 'shadow', 'cornerRadius', 'uniformRadius',
-        'polygonSides', 'polygonRadius', 'shapeType',
-        'imgStroke', 'imgStrokeWidth',
-        'lockMovementX', 'lockMovementY', 'lockScalingX', 'lockScalingY', 'lockRotation',
-        'originX', 'originY'
-    ];
+    const customProps = CUSTOM_PROPS;
 
     // If Active Selection, we handle duplicates individually to avoid Group cloning issues
     if (activeObj.type === 'activeSelection') {

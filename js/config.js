@@ -29,6 +29,18 @@ export const FONT_GROUPS = [
 
 export const MAX_HISTORY = 50;
 
+
+export const CUSTOM_PROPS = [
+    'id', 'uid', 'name', 'isBackground',
+    'starSpikes', 'outerRadius', 'innerRadius',
+    'polygonSides', 'polygonRadius', 'shapeType',
+    'uniformRadius', 'cornerRadius',
+    'imgStrokeWidth', 'imgStroke',
+    'blurAmount', 'blurShadow',
+    'lockMovementX', 'lockMovementY', 'lockScalingX', 'lockScalingY', 'lockRotation',
+    'visible', 'selectable', 'evented'
+];
+
 export async function loadAvailableFonts() {
     try {
         const response = await fetch('fonts/fonts.json');
