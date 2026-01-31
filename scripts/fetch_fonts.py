@@ -9,7 +9,7 @@ AVAILABLE_FONTS = [
     'Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 
 
     # Serif / Old School
-    'Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab'
+    'Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab',
     # Display / Poster / Bold
     'Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One',
 
@@ -37,7 +37,14 @@ def slugify(text):
 
 def download_file(url, dest):
     try:
-        with urllib.request.urlopen(url) as response, open(dest, 'wb') as out_file:
+        req = urllib.request.Request(
+            url, 
+            data=None, 
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+            }
+        )
+        with urllib.request.urlopen(req) as response, open(dest, 'wb') as out_file:
             data = response.read()
             out_file.write(data)
         return True
@@ -51,7 +58,14 @@ def process_font(family):
 
     try:
         print(f"Processing {family}...")
-        with urllib.request.urlopen(api_url) as response:
+        req = urllib.request.Request(
+            api_url, 
+            data=None, 
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.114 Safari/537.36'
+            }
+        )
+        with urllib.request.urlopen(req) as response:
             data = json.loads(response.read().decode())
 
         # Filter variants
@@ -110,6 +124,11 @@ def generate_manifests():
     except FileNotFoundError:
         files = []
 
+    # Create lookup for original names (slug -> Original Name)
+    slug_map = {}
+    for font in AVAILABLE_FONTS:
+        slug_map[slugify(font)] = font
+
     for filename in files:
         if not filename.endswith(".ttf"):
             continue
@@ -124,9 +143,32 @@ def generate_manifests():
                 family_slug = name_part
                 suffix = "Regular"
                 
-            # Naive family name restoration (CamelCase mostly or PascalCase)
-            # We use the slug as the family name in CSS to match booleans.js logic
-            family_name = family_slug
+            # Use original name if found in map, otherwise fallback to slug (but title-cased if possible?)
+            # Actually, `slugify` removes spaces. So 'open-sans' key should match 'Open Sans' value.
+            # But the filename part `family_slug` is derived from `slugify(family)`.
+            # Wait, process_font uses: font_id = slugify(family) and safe_family = family.replace(' ', '')
+            # The filenames are saved as: f"{safe_family}-{suffix}.ttf"
+            # So 'Open Sans' -> 'opensans' (slug) BUT filename uses 'OpenSans' (safe_family).
+            
+            # Let's adjust logic.
+            # Filenames created by this script are OpenSans-Regular.ttf.
+            # `name_part` will be OpenSans-Regular.
+            # `family_slug` (from split) will be OpenSans.
+            # We need to map 'OpenSans' (from filename) or 'opensans' (lowercased) back to 'Open Sans'.
+             
+            # Let's populate map with both variants to be safe
+            
+            # Key: safe_family (OpenSans) -> Value: Original (Open Sans)
+            current_safe_family = family_slug
+            
+            # Find matching original font
+            family_name = current_safe_family # Default fallback
+            
+            # Try to match against AVAILABLE_FONTS
+            for original in AVAILABLE_FONTS:
+                if original.replace(' ', '') == current_safe_family:
+                    family_name = original
+                    break
             
             # Determine weights/style from suffix
             weight = 400

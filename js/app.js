@@ -93,7 +93,7 @@ document.addEventListener('keydown', (e) => {
 
     const activeObj = state.canvas && state.canvas.getActiveObject();
 
-    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text') && activeObj.isEditing) {
+    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox') && activeObj.isEditing) {
         return;
     }
 

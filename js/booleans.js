@@ -14,7 +14,7 @@ export async function performBooleanOperation(operation) {
     }
 
     // Allow text in valid types
-    const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text'];
+    const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text', 'textbox'];
     const invalidObj = activeObjects.find(obj => !validTypes.includes(obj.type) && obj.type !== 'ignore-image');
 
     // Capture references
@@ -40,7 +40,7 @@ export async function performBooleanOperation(operation) {
 
         for (const obj of objectsToProcess) {
             let item;
-            if (obj.type === 'i-text' || obj.type === 'text') {
+            if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
                 try {
                     item = await convertTextToPaperPath(obj);
                 } catch (textErr) {
@@ -147,7 +147,7 @@ export async function performBooleanOperation(operation) {
 export async function convertSelectedTextToPath() {
     const activeObj = state.canvas.getActiveObject();
 
-    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text')) {
+    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text' && activeObj.type !== 'textbox')) {
         return;
     }
 
@@ -302,90 +302,116 @@ async function convertTextToPaperPath(textObj) {
                 } else {
                     if (isFallback) {
                         console.log(`[BooleanOps] Successfully loaded fallback font: ${pathToCheck}`);
-                        // Optional: Warn user that exact style wasn't found?
-                        // alert("Warning: Exact font style not found. Using Regular weight for conversion.");
                     }
 
-                    const path = font.getPath(text, 0, 0, fontSize);
-                    const svgPathData = path.toPathData();
-                    let paperItem = paper.project.importSVG(`<path d="${svgPathData}"/>`);
+                    // Multi-line Handling
+                    const lines = textObj.textLines || textObj.text.split('\n');
+                    const lineHeight = textObj.lineHeight || 1.16;
+                    const totalWidth = textObj.width;
+                    const totalHeight = textObj.height;
+                    const align = textObj.textAlign || 'left';
+                    const scaleFactor = 1; // Used if we need to scale fontSize, but fontSize is absolute here?
 
-                    const bounds = paperItem.bounds;
-                    // Center the item at (0,0)
-                    paperItem.position = new paper.Point(0, 0);
+                    // Use CompoundPath instead of Group to support getPathData()
+                    const compound = new paper.CompoundPath({
+                        fillColor: 'black'
+                    });
 
-                    // FAUX STYLES (Synthetic)
-                    // If we fell back to Regular but wanted Italic, we must Skew it.
-                    if (isFallback && isItalic) {
-                        // Shear X based on Y. 
-                        // A shear factor of -0.25 (approx -14 deg) usually produces correct right-leaning italic.
-                        paperItem.shear(new paper.Point(-0.25, 0));
-                    }
+                    // Heuristic Ascent (approximate baseline from top)
+                    // Fabric defaults: baseline is roughly fontSize * 0.9 depending on font.
+                    // Accurate way: use font.ascender / font.unitsPerEm * fontSize.
+                    const ascender = (font.ascender / font.unitsPerEm) * fontSize;
+                    // const descender = (font.descender / font.unitsPerEm) * fontSize;
 
-                    // If we fell back to Regular but wanted Bold, we must Thicken it.
-                    // We can simulate this by adding a stroke and expanding it, then uniting it with the original.
-                    // If we fell back to Regular but wanted Bold, we must Thicken it.
-                    // We can simulate this by adding a stroke and expanding it, then uniting it with the original.
-                    if (isFallback && (weightVal >= 700 || fontWeight === 'bold')) {
-                        // Amount to thicken.
-                        // 2.5% of font size strokeWidth means 1.25% expansion on each side.
-                        const boldStrokeWidth = fontSize * 0.05;
+                    // Fabric's vertical text positioning is complex. 
+                    // Simplification: Standard line height stepping.
+                    // First line baseline ~ ascender.
 
-                        // Recursive function to apply stroke and expand
-                        const applyFauxBold = (item) => {
-                            if (!item) return null;
+                    for (let i = 0; i < lines.length; i++) {
+                        const lineStr = lines[i];
+                        if (!lineStr.trim()) continue; // Skip empty lines? Or preserve spacing?
 
-                            // Check if item supports expand
-                            if (typeof item.expand === 'function') {
-                                item.strokeColor = 'black';
-                                item.strokeWidth = boldStrokeWidth;
-                                item.strokeJoin = 'round';
-                                item.strokeCap = 'round';
-                                return item.expand({ stroke: true, fill: true, insert: false });
+                        // Calculate Y
+                        // Line 0 is at top. Baseline is roughly down by ascender.
+                        // Actually, let's use simple spacing: i * (fontSize * lineHeight)
+                        // + adjustment to sit correctly.
+                        const y = (i * fontSize * lineHeight) + ascender;
+
+                        // Calculate X (Alignment)
+                        const lineWidth = font.getAdvanceWidth(lineStr, fontSize);
+                        let x = 0;
+                        if (align === 'center') {
+                            x = (totalWidth - lineWidth) / 2;
+                        } else if (align === 'right') {
+                            x = totalWidth - lineWidth;
+                        }
+                        // Left is 0.
+
+                        const path = font.getPath(lineStr, x, y, fontSize);
+                        const svgPathData = path.toPathData();
+                        const paperItem = paper.project.importSVG(`<path d="${svgPathData}"/>`);
+
+                        // importSVG might return Group or Path/CompoundPath
+                        if (paperItem) {
+                            if (paperItem.children) {
+                                // If it's a group, take its children (paths)
+                                const items = [...paperItem.children];
+                                items.forEach(child => compound.addChild(child));
+                            } else {
+                                compound.addChild(paperItem);
                             }
-
-                            // If Group, iterate
-                            if (item.children) {
-                                // We need to be careful. Expanding children and adding them to a new list.
-                                // But honestly, for single text conversion, importSVG likely returns a Group with one CompoundPath (the text).
-                                // Let's try to find that child.
-                                const resultChildren = [];
-                                let unitedChild = null;
-
-                                for (let i = 0; i < item.children.length; i++) {
-                                    const expanded = applyFauxBold(item.children[i]);
-                                    if (expanded) {
-                                        if (!unitedChild) unitedChild = expanded;
-                                        else unitedChild = unitedChild.unite(expanded);
-                                    }
-                                }
-                                return unitedChild;
-                            }
-
-                            return item;
-                        };
-
-                        // Execute
-                        const result = applyFauxBold(paperItem);
-                        if (result) {
-                            paperItem = result;
+                            // Cleanup the container if it was a group or detached
+                            paperItem.remove();
                         }
                     }
 
-                    // CRITICAL FIX: Bake the centering translation into the path geometry
-                    // BEFORE applying the Fabric matrix.
-                    // If we don't do this, setting item.matrix later overwrites the translation,
-                    // and the rotation happens around the wrong point (likely top-left of standard coord system).
-                    paperItem.applyMatrix = true;
+                    // FAUX STYLES (applied to the whole group)
+                    if (isFallback && isItalic) {
+                        compound.shear(new paper.Point(-0.25, 0));
+                    }
+
+                    // Faux Bold
+                    if (isFallback && (weightVal >= 700 || fontWeight === 'bold')) {
+                        const boldStrokeWidth = fontSize * 0.05;
+                        const applyFauxBoldToItem = (itm) => {
+                            // CompoundPath or Path
+                            if (typeof itm.expand === 'function') {
+                                itm.strokeColor = 'black';
+                                itm.strokeWidth = boldStrokeWidth;
+                                itm.strokeJoin = 'round';
+                                itm.strokeCap = 'round';
+                                const exp = itm.expand({ stroke: true, fill: true, insert: false });
+                                return exp;
+                            }
+                            return itm;
+                        };
+
+                        // Expand the entire compound path
+                        const expanded = applyFauxBoldToItem(compound);
+                        // If expanded returns a Group (it might), we might be in trouble again with getPathData
+                        // But Paper's expand usually returns a Path or CompoundPath if simple.
+                        // If it returns a Group, we'd need to flatten it. 
+                        // For now assuming CompoundPath behavior holds.
+                    }
+
+                    // TRANSFORM & PLACEMENT
+
+                    // The Group constructed above is in "Local Box Coordinates" (Top-Left is 0,0).
+                    // We need to move it so its geometrical center matches Fabric's object center (0,0 in local transform).
+                    // No, Fabric's transform matrix assumes (0,0) is center of object.
+                    // Our constructed box is 0..width, 0..height.
+                    // So we translate by (-width/2, -height/2).
+
+                    compound.translate(new paper.Point(-totalWidth / 2, -totalHeight / 2));
+
+                    compound.applyMatrix = true;
 
                     const m = textObj.calcTransformMatrix();
-                    // Correct order: a, b, c, d, tx, ty
-                    // Previously m[2] and m[1] were swapped, causing inverted rotation
                     const matrix = new paper.Matrix(m[0], m[1], m[2], m[3], m[4], m[5]);
 
-                    paperItem.matrix = matrix;
+                    compound.matrix = matrix;
 
-                    resolve(paperItem);
+                    resolve(compound);
                 }
             });
         };

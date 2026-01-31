@@ -13,55 +13,55 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'ArchivoBlack';
+    font-family: 'Archivo Black';
     src: url('ArchivoBlack-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'BebasNeue';
+    font-family: 'Bebas Neue';
     src: url('BebasNeue-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'BlackOpsOne';
+    font-family: 'Black Ops One';
     src: url('BlackOpsOne-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'BodoniModa';
+    font-family: 'Bodoni Moda';
     src: url('BodoniModa-Black.ttf') format('truetype');
     font-weight: 900;
     font-style: normal;
 }
 @font-face {
-    font-family: 'BodoniModa';
+    font-family: 'Bodoni Moda';
     src: url('BodoniModa-BlackItalic.ttf') format('truetype');
     font-weight: 900;
     font-style: italic;
 }
 @font-face {
-    font-family: 'BodoniModa';
+    font-family: 'Bodoni Moda';
     src: url('BodoniModa-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'BodoniModa';
+    font-family: 'Bodoni Moda';
     src: url('BodoniModa-BoldItalic.ttf') format('truetype');
     font-weight: 700;
     font-style: italic;
 }
 @font-face {
-    font-family: 'BodoniModa';
+    font-family: 'Bodoni Moda';
     src: url('BodoniModa-Italic.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
 }
 @font-face {
-    font-family: 'BodoniModa';
+    font-family: 'Bodoni Moda';
     src: url('BodoniModa-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -73,19 +73,19 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'CinzelDecorative';
+    font-family: 'Cinzel Decorative';
     src: url('CinzelDecorative-Black.ttf') format('truetype');
     font-weight: 900;
     font-style: normal;
 }
 @font-face {
-    font-family: 'CinzelDecorative';
+    font-family: 'Cinzel Decorative';
     src: url('CinzelDecorative-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'CinzelDecorative';
+    font-family: 'Cinzel Decorative';
     src: url('CinzelDecorative-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -97,13 +97,13 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'DancingScript';
+    font-family: 'Dancing Script';
     src: url('DancingScript-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'DancingScript';
+    font-family: 'Dancing Script';
     src: url('DancingScript-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -115,25 +115,25 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'FasterOne';
+    font-family: 'Faster One';
     src: url('FasterOne-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'GreatVibes';
+    font-family: 'Great Vibes';
     src: url('GreatVibes-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'IMFellEnglish';
+    font-family: 'IM Fell English';
     src: url('IMFellEnglish-Italic.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
 }
 @font-face {
-    font-family: 'IMFellEnglish';
+    font-family: 'IM Fell English';
     src: url('IMFellEnglish-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -193,6 +193,42 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'Josefin Slab';
+    src: url('JosefinSlab-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Josefin Slab';
+    src: url('JosefinSlab-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Josefin Slab';
+    src: url('JosefinSlab-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Josefin Slab';
+    src: url('JosefinSlab-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Josefin Slab';
+    src: url('JosefinSlab-LightItalic.ttf') format('truetype');
+    font-weight: 300;
+    font-style: italic;
+}
+@font-face {
+    font-family: 'Josefin Slab';
+    src: url('JosefinSlab-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Lato';
     src: url('Lato-Black.ttf') format('truetype');
     font-weight: 900;
@@ -241,25 +277,25 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'LibreBaskerville';
+    font-family: 'Libre Baskerville';
     src: url('LibreBaskerville-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'LibreBaskerville';
+    font-family: 'Libre Baskerville';
     src: url('LibreBaskerville-BoldItalic.ttf') format('truetype');
     font-weight: 700;
     font-style: italic;
 }
 @font-face {
-    font-family: 'LibreBaskerville';
+    font-family: 'Libre Baskerville';
     src: url('LibreBaskerville-Italic.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
 }
 @font-face {
-    font-family: 'LibreBaskerville';
+    font-family: 'Libre Baskerville';
     src: url('LibreBaskerville-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -385,85 +421,85 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-Black.ttf') format('truetype');
     font-weight: 900;
     font-style: normal;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-BlackItalic.ttf') format('truetype');
     font-weight: 900;
     font-style: italic;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-BoldItalic.ttf') format('truetype');
     font-weight: 700;
     font-style: italic;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-Italic.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-Light.ttf') format('truetype');
     font-weight: 300;
     font-style: normal;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-LightItalic.ttf') format('truetype');
     font-weight: 300;
     font-style: italic;
 }
 @font-face {
-    font-family: 'NotoSerif';
+    font-family: 'Noto Serif';
     src: url('NotoSerif-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'OpenSans';
+    font-family: 'Open Sans';
     src: url('OpenSans-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'OpenSans';
+    font-family: 'Open Sans';
     src: url('OpenSans-BoldItalic.ttf') format('truetype');
     font-weight: 700;
     font-style: italic;
 }
 @font-face {
-    font-family: 'OpenSans';
+    font-family: 'Open Sans';
     src: url('OpenSans-Italic.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
 }
 @font-face {
-    font-family: 'OpenSans';
+    font-family: 'Open Sans';
     src: url('OpenSans-Light.ttf') format('truetype');
     font-weight: 300;
     font-style: normal;
 }
 @font-face {
-    font-family: 'OpenSans';
+    font-family: 'Open Sans';
     src: url('OpenSans-LightItalic.ttf') format('truetype');
     font-weight: 300;
     font-style: italic;
 }
 @font-face {
-    font-family: 'OpenSans';
+    font-family: 'Open Sans';
     src: url('OpenSans-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -493,49 +529,49 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'PermanentMarker';
+    font-family: 'Permanent Marker';
     src: url('PermanentMarker-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'PirataOne';
+    font-family: 'Pirata One';
     src: url('PirataOne-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'PlayfairDisplay';
+    font-family: 'Playfair Display';
     src: url('PlayfairDisplay-Black.ttf') format('truetype');
     font-weight: 900;
     font-style: normal;
 }
 @font-face {
-    font-family: 'PlayfairDisplay';
+    font-family: 'Playfair Display';
     src: url('PlayfairDisplay-BlackItalic.ttf') format('truetype');
     font-weight: 900;
     font-style: italic;
 }
 @font-face {
-    font-family: 'PlayfairDisplay';
+    font-family: 'Playfair Display';
     src: url('PlayfairDisplay-Bold.ttf') format('truetype');
     font-weight: 700;
     font-style: normal;
 }
 @font-face {
-    font-family: 'PlayfairDisplay';
+    font-family: 'Playfair Display';
     src: url('PlayfairDisplay-BoldItalic.ttf') format('truetype');
     font-weight: 700;
     font-style: italic;
 }
 @font-face {
-    font-family: 'PlayfairDisplay';
+    font-family: 'Playfair Display';
     src: url('PlayfairDisplay-Italic.ttf') format('truetype');
     font-weight: 400;
     font-style: italic;
 }
 @font-face {
-    font-family: 'PlayfairDisplay';
+    font-family: 'Playfair Display';
     src: url('PlayfairDisplay-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -685,19 +721,19 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'RockSalt';
+    font-family: 'Rock Salt';
     src: url('RockSalt-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'RubikGlitch';
+    font-family: 'Rubik Glitch';
     src: url('RubikGlitch-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
 @font-face {
-    font-family: 'RubikMarkerHatch';
+    font-family: 'Rubik Marker Hatch';
     src: url('RubikMarkerHatch-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -709,7 +745,7 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'SedgwickAveDisplay';
+    font-family: 'Sedgwick Ave Display';
     src: url('SedgwickAveDisplay-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
@@ -751,7 +787,7 @@
     font-style: normal;
 }
 @font-face {
-    font-family: 'UncialAntiqua';
+    font-family: 'Uncial Antiqua';
     src: url('UncialAntiqua-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;

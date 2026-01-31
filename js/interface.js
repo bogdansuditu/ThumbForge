@@ -431,7 +431,7 @@ function getLayerIcon(obj) {
     if (obj.isBackground) {
         return `<svg ${svgStyle}><rect x="3" y="3" width="18" height="18" rx="2"/></svg>`;
     }
-    if (obj.type === 'i-text' || obj.type === 'text') {
+    if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
         return `<svg ${svgStyle}><path d="M5 4h14M12 4v16"/></svg>`;
     }
     if (obj.type === 'rect') {
@@ -459,7 +459,7 @@ function getLayerName(obj) {
     if (obj.isBackground) return 'Background';
     if (obj.name) return obj.name;
     if (obj.type === 'group') return 'Group';
-    if (obj.type === 'i-text' || obj.type === 'text') {
+    if (obj.type === 'i-text' || obj.type === 'text' || obj.type === 'textbox') {
         return obj.text.substring(0, 20) + (obj.text.length > 20 ? '...' : '');
     }
     if (obj.type === 'rect') return 'Rectangle';
@@ -526,7 +526,7 @@ export function updatePropertiesPanel() {
     `;
 
     // Text specific
-    if (activeObj.type === 'i-text' || activeObj.type === 'text') {
+    if (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox') {
         html += `
             <div class="property-group">
                 <label class="property-label">Size</label>
@@ -1287,7 +1287,7 @@ export function updateObjectProperty(property, value) {
 
 export function toggleFontWeight() {
     const activeObj = state.canvas.getActiveObject();
-    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text')) return;
+    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text' && activeObj.type !== 'textbox')) return;
 
     const newWeight = activeObj.fontWeight === 'bold' ? 'normal' : 'bold';
     updateObjectProperty('fontWeight', newWeight);
@@ -1296,7 +1296,7 @@ export function toggleFontWeight() {
 
 export function toggleFontStyle() {
     const activeObj = state.canvas.getActiveObject();
-    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text')) return;
+    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text' && activeObj.type !== 'textbox')) return;
 
     const newStyle = activeObj.fontStyle === 'italic' ? 'normal' : 'italic';
     updateObjectProperty('fontStyle', newStyle);
@@ -1424,7 +1424,7 @@ export function checkSelectionForBooleanOps() {
         const objects = activeObj.getObjects();
         // Check if all objects are valid shapes for boolean ops (no images, texts for now unless converted)
         // Valid: rect, circle, triangle, polygon, path, line, polyline
-        const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text'];
+        const validTypes = ['rect', 'circle', 'triangle', 'polygon', 'path', 'line', 'polyline', 'i-text', 'text', 'textbox'];
         const allValid = objects.every(obj => validTypes.includes(obj.type));
 
         if (allValid) {
@@ -1511,7 +1511,7 @@ export function toggleFontDropdown() {
             options.classList.add('open');
 
             const activeObj = state.canvas.getActiveObject();
-            if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+            if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox')) {
                 state.originalFontFamily = activeObj.fontFamily;
                 state.isFontPreviewing = true;
 
@@ -1539,7 +1539,7 @@ export function closeFontDropdownOutside(e) {
 
 export function previewFont(font) {
     const activeObj = state.canvas.getActiveObject();
-    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox')) {
         activeObj.set('fontFamily', font);
         state.canvas.renderAll();
     }
@@ -1547,7 +1547,7 @@ export function previewFont(font) {
 
 export function revertFont() {
     const activeObj = state.canvas.getActiveObject();
-    if (activeObj && state.originalFontFamily && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+    if (activeObj && state.originalFontFamily && (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox')) {
         activeObj.set('fontFamily', state.originalFontFamily);
         state.canvas.renderAll();
     }
@@ -1578,7 +1578,7 @@ export function updateContextMenus() {
 
     if (!convertBtn) return;
 
-    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text')) {
+    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox')) {
         convertBtn.classList.remove('disabled');
     } else {
         convertBtn.classList.add('disabled');

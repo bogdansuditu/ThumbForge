@@ -51,9 +51,10 @@ export function addText() {
     // strict no-hardcode policy: use first available font or generic
     const defaultFont = state.defaults.fontFamily || (AVAILABLE_FONTS && AVAILABLE_FONTS.length > 0 ? AVAILABLE_FONTS[0] : 'sans-serif');
 
-    const text = new fabric.IText('Click to edit', {
+    const text = new fabric.Textbox('Click to edit', {
         left: state.canvas.width / 2,
         top: state.canvas.height / 2,
+        width: 300,
         fontSize: 48,
         fontFamily: defaultFont,
         fill: state.defaults.fill,
@@ -64,7 +65,8 @@ export function addText() {
         originX: 'center',
         originY: 'center',
         blurAmount: 0,
-        objectCaching: true
+        objectCaching: true,
+        splitByGrapheme: false
     });
 
     state.canvas.add(text);
