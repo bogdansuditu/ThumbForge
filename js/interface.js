@@ -537,6 +537,15 @@ export function updatePropertiesPanel() {
                 </div>
             </div>
 
+            <div class="property-group">
+                <label class="property-label">Line Spacing</label>
+                <div class="range-container">
+                    <input type="range" min="0.5" max="3" step="0.1" value="${activeObj.lineHeight || 1.16}"
+                           oninput="updateObjectProperty('lineHeight', parseFloat(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.lineHeight || 1.16}</span>
+                </div>
+            </div>
+
             <div class="property-group" style="z-index: 100; position: relative;">
                 <label class="property-label">Font</label>
                 <!-- Custom Dropdown -->

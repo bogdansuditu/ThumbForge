@@ -31,7 +31,8 @@ export const state = {
         stroke: '#000000',
         strokeWidth: 1,
         backgroundColor: '#808080',
-        fontFamily: 'Lato'
+        fontFamily: 'Lato',
+        lineHeight: 1.16
     }
 };
 
