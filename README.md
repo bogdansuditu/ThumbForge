@@ -29,7 +29,7 @@ That's it! No npm install, no build step, no waiting.
 - Click to add text
 - Double-click to edit inline
 - Full styling: fonts, colors, stroke, shadow, glow
-- 6 font families available
+- Many font families available
 - Text effects: outline, shadow, glow, blur
 
 #### Shapes (S)

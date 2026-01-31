@@ -1408,6 +1408,7 @@ export function checkSelectionForAlignment() {
 
     checkSelectionForBooleanOps();
     checkSelectionForLayerOrder();
+    checkSelectionForFlip();
 }
 
 export function checkSelectionForLayerOrder() {
@@ -1444,6 +1445,90 @@ export function checkSelectionForBooleanOps() {
     } else {
         booleanGroup.style.display = 'none';
     }
+}
+
+export function checkSelectionForFlip() {
+    const activeObj = state.canvas.getActiveObject();
+    const flipGroup = document.getElementById('flipGroup');
+
+    if (!flipGroup) return;
+
+    // Show if there is any selection (single or multiple)
+    // We can flip any object or group of objects
+    if (activeObj) {
+        flipGroup.style.display = 'flex';
+    } else {
+        flipGroup.style.display = 'none';
+    }
+}
+
+export function flipSelected(direction) {
+    const activeObj = state.canvas.getActiveObject();
+    if (!activeObj) return;
+
+    if (activeObj.type === 'activeSelection') {
+        const center = activeObj.getCenterPoint();
+        activeObj.getObjects().forEach(obj => {
+            // Detach from group to manipulate properly
+            // Actually, manipulating objects inside activeSelection is tricky with coordinates.
+            // But we can flip the WHOLE group? No, activeSelection isn't a permanent group.
+
+            // If we flip the activeSelection itself:
+            // It flips visually. But when deselected, do the objects stay flipped?
+            // Yes, if we update their properties.
+
+            // Standard Fabric way: flip the group.
+            flipObjectGlobal(activeObj, direction);
+        });
+
+        // Wait, for activeSelection, treating it as a single object for the flip operation is often desired
+        // i.e. flip the whole selection around its center.
+        flipObjectGlobal(activeObj, direction);
+
+        activeObj.dirty = true;
+    } else {
+        flipObjectGlobal(activeObj, direction);
+    }
+
+    state.canvas.requestRenderAll();
+    saveState();
+}
+
+function flipObjectGlobal(obj, direction) {
+    if (direction === 'horizontal') {
+        obj.toggle('flipX');
+    } else {
+        obj.toggle('flipY');
+    }
+
+    // The "Global Flip" fix for rotated objects:
+    // If we just flipX/flipY, it happens in local object space.
+    // IF the object is rotated, local flip != global flip.
+    // To achieve Global Flip (mirror on screen axis), we need to negate angle 
+    // AND toggle flip.
+    // Actually, negating angle + flip mimics a reflection across the axis 
+    // corresponding to 0 rotation?
+
+    // Let's verify the user request "flip it in the state it is with the rotation applied".
+    // This implies visual mirroring.
+
+    // Algorithm:
+    // 1. Flip X or Y
+    // 2. Negate Angle (angle = -angle)
+    // This works perfectly for orthogonal flips.
+
+    // BUT! For Fabric.js:
+    // flipX swaps the image horizontally relative to its origin.
+    // If rotated 45 deg, and we flipX, it flips across the 45 deg axis.
+    // We want to flip across the VERTICAL axis of the SCREEN.
+
+    // Correct Math for Global Horizontal Flip:
+    // New Angle = -Old Angle
+    // FlipX = !FlipX
+    // This works.
+
+    obj.angle *= -1;
+    obj.setCoords();
 }
 
 export function alignSelected(direction) {

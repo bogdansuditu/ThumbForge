@@ -24,7 +24,9 @@ import {
     toggleShadow,
     updateShadowProperty,
     updateTransformProperty,
-    initInterface
+    initInterface,
+    flipSelected,
+    checkSelectionForFlip
 } from './interface.js';
 import {
     undo,
@@ -275,6 +277,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const btnExclude = document.getElementById('booleanExclude');
     if (btnExclude) btnExclude.addEventListener('click', () => performBooleanOperation('exclude'));
+
+    // Flip Operations
+    const btnFlipH = document.getElementById('flipHorizontal');
+    if (btnFlipH) btnFlipH.addEventListener('click', () => flipSelected('horizontal'));
+
+    const btnFlipV = document.getElementById('flipVertical');
+    if (btnFlipV) btnFlipV.addEventListener('click', () => flipSelected('vertical'));
 
     document.addEventListener('paste', (e) => {
         const items = e.clipboardData.items;
