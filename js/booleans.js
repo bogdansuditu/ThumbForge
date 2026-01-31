@@ -305,14 +305,20 @@ async function convertTextToPaperPath(textObj) {
                     }
 
                     // Multi-line Handling
-                    const lines = textObj.textLines || textObj.text.split('\n');
+                    // Prioritize _textLines (Fabric internal) -> textLines -> split
+                    // Note: Fabric 4/5 uses _textLines for wrapped lines
+                    const lines = textObj._textLines || textObj.textLines || textObj.text.split('\n');
                     const lineHeight = textObj.lineHeight || 1.16;
                     const totalWidth = textObj.width;
                     const totalHeight = textObj.height;
                     const align = textObj.textAlign || 'left';
-                    const scaleFactor = 1; // Used if we need to scale fontSize, but fontSize is absolute here?
+
+                    console.log(`[BooleanOps-Debug] Font: ${fontFamily}, Size: ${fontSize}, LH: ${lineHeight}, Ascender: ${font.ascender}, Units: ${font.unitsPerEm}`);
+                    console.log(`[BooleanOps-Debug] Lines: ${lines.length}, Total H: ${totalHeight}`);
 
                     // Use CompoundPath instead of Group to support getPathData()
+                    const scaleFactor = 1;
+
                     const compound = new paper.CompoundPath({
                         fillColor: 'black'
                     });
@@ -328,8 +334,19 @@ async function convertTextToPaperPath(textObj) {
                     // First line baseline ~ ascender.
 
                     for (let i = 0; i < lines.length; i++) {
-                        const lineStr = lines[i];
-                        if (!lineStr.trim()) continue; // Skip empty lines? Or preserve spacing?
+                        let lineStr = lines[i];
+
+                        if (typeof lineStr !== 'string') {
+                            if (lineStr && typeof lineStr === 'object' && lineStr.text) {
+                                lineStr = lineStr.text;
+                            } else if (Array.isArray(lineStr)) {
+                                lineStr = lineStr.join('');
+                            } else {
+                                lineStr = String(lineStr || '');
+                            }
+                        }
+
+                        if (!lineStr.trim()) continue; // Skip empty lines
 
                         // Calculate Y
                         // Line 0 is at top. Baseline is roughly down by ascender.
