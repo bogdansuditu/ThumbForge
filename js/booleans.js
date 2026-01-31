@@ -333,6 +333,11 @@ async function convertTextToPaperPath(textObj) {
                     // Simplification: Standard line height stepping.
                     // First line baseline ~ ascender.
 
+                    // CALCULATE SPACING FROM HEIGHT
+                    // Fabric total height includes line spacing. 
+                    // To match visually, we distribute lines evenly within that height.
+                    const verticalStep = lines.length > 0 ? (totalHeight / lines.length) : (fontSize * lineHeight);
+
                     for (let i = 0; i < lines.length; i++) {
                         let lineStr = lines[i];
 
@@ -350,9 +355,19 @@ async function convertTextToPaperPath(textObj) {
 
                         // Calculate Y
                         // Line 0 is at top. Baseline is roughly down by ascender.
-                        // Actually, let's use simple spacing: i * (fontSize * lineHeight)
-                        // + adjustment to sit correctly.
-                        const y = (i * fontSize * lineHeight) + ascender;
+                        // We align lines relative to the top of their "slot" defined by verticalStep
+                        // But we need to add ascender to get to baseline from top of that slot.
+                        // However, Fabric's first line top is not 0, it's slightly offset?
+                        // Let's assume standard behavior: 
+                        // y = (i * verticalStep) + (ascender/units * fontSize)
+                        // Note: ascender is usually positive in metrics (above baseline).
+
+                        // Refined:
+                        // verticalStep is the height of one line box.
+                        // We want to center the text baseline within that box? Or top align?
+                        // Fabric standard is baseline alignment.
+
+                        const y = (i * verticalStep) + ascender;
 
                         // Calculate X (Alignment)
                         const lineWidth = font.getAdvanceWidth(lineStr, fontSize);

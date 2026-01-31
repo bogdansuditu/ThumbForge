@@ -54,7 +54,7 @@ def download_file(url, dest):
 
 def process_font(family):
     font_id = slugify(family)
-    api_url = f"https://gwfh.mranftl.com/api/fonts/{font_id}"
+    api_url = f"https://gwfh.mranftl.com/api/fonts/{font_id}?subsets=latin,latin-ext"
 
     try:
         print(f"Processing {family}...")
@@ -98,11 +98,11 @@ def process_font(family):
             filename = f"{safe_family}-{suffix}.ttf"
             dest_path = os.path.join(FONTS_DIR, filename)
 
-            if not os.path.exists(dest_path):
-                if download_file(v['ttf'], dest_path):
-                    print(f"  Downloaded {filename}")
+            # FORCE DOWNLOAD (overwrite existing)
+            if download_file(v['ttf'], dest_path):
+                print(f"  Downloaded {filename}")
             else:
-                print(f"  Exists {filename}")
+                print(f"  Failed to download {filename}")
 
             # Append to CSS
             global css_content
