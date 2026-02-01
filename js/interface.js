@@ -1535,61 +1535,99 @@ export function alignSelected(direction) {
     const activeObj = state.canvas.getActiveObject();
     if (!activeObj || activeObj.type !== 'activeSelection') return;
 
-    const objects = activeObj.getObjects();
-    const groupWidth = activeObj.width;
-    const groupHeight = activeObj.height;
+    // 1. Get Absolute (Canvas Space) Bounds of the Selection
+    const selectionRect = activeObj.getBoundingRect();
+    const groupMatrix = activeObj.calcTransformMatrix();
 
-    objects.forEach(obj => {
-        const objWidth = obj.width * obj.scaleX;
-        const objHeight = obj.height * obj.scaleY;
+    // Pre-calculate Group properties for inverse mapping
+    const groupAngle = activeObj.angle || 0;
+    const groupScaleX = activeObj.scaleX || 1;
+    const groupScaleY = activeObj.scaleY || 1;
 
-        let centerOffsetX = 0;
-        if (obj.originX === 'left') centerOffsetX = objWidth / 2;
-        else if (obj.originX === 'right') centerOffsetX = -objWidth / 2;
+    activeObj.getObjects().forEach(obj => {
+        // 2. Calculate Absolute Bounds of the Object
+        // We cannot trust obj.getBoundingRect() alone inside a group as it might return local or mixed coords.
+        // Safest approach: Transform the object's local corners by the group's matrix to get absolute corners.
 
-        let centerOffsetY = 0;
-        if (obj.originY === 'top') centerOffsetY = objHeight / 2;
-        else if (obj.originY === 'bottom') centerOffsetY = -objHeight / 2;
+        const localCoords = obj.getCoords(); // returns [{x,y}...] corners in Group's Local Space
 
-        let newCenterX = obj.left + centerOffsetX;
-        let newCenterY = obj.top + centerOffsetY;
+        // Transform local corners to global canvas coordinates
+        const absCorners = localCoords.map(p => fabric.util.transformPoint(p, groupMatrix));
+
+        // Calculate AABB from absolute corners
+        const minX = Math.min(absCorners[0].x, absCorners[1].x, absCorners[2].x, absCorners[3].x);
+        const maxX = Math.max(absCorners[0].x, absCorners[1].x, absCorners[2].x, absCorners[3].x);
+        const minY = Math.min(absCorners[0].y, absCorners[1].y, absCorners[2].y, absCorners[3].y);
+        const maxY = Math.max(absCorners[0].y, absCorners[1].y, absCorners[2].y, absCorners[3].y);
+
+        const objRect = {
+            left: minX,
+            top: minY,
+            width: maxX - minX,
+            height: maxY - minY
+        };
+
+        // 3. Calculate Required Shift (Delta) in Absolute Canvas Space
+        let dX = 0;
+        let dY = 0;
 
         switch (direction) {
             case 'left':
-                newCenterX = -groupWidth / 2 + objWidth / 2;
+                dX = selectionRect.left - objRect.left;
                 break;
             case 'centerH':
-                newCenterX = 0;
+                // Align Centers
+                const selCenterX = selectionRect.left + selectionRect.width / 2;
+                const objCenterX = objRect.left + objRect.width / 2;
+                dX = selCenterX - objCenterX;
                 break;
             case 'right':
-                newCenterX = groupWidth / 2 - objWidth / 2;
+                dX = (selectionRect.left + selectionRect.width) - (objRect.left + objRect.width);
                 break;
             case 'top':
-                newCenterY = -groupHeight / 2 + objHeight / 2;
+                dY = selectionRect.top - objRect.top;
                 break;
             case 'centerV':
-                newCenterY = 0;
+                const selCenterY = selectionRect.top + selectionRect.height / 2;
+                const objCenterY = objRect.top + objRect.height / 2;
+                dY = selCenterY - objCenterY;
                 break;
             case 'bottom':
-                newCenterY = groupHeight / 2 - objHeight / 2;
+                dY = (selectionRect.top + selectionRect.height) - (objRect.top + objRect.height);
                 break;
         }
 
-        if (direction === 'left' || direction === 'centerH' || direction === 'right') {
-            obj.set('left', newCenterX - centerOffsetX);
-        }
-        if (direction === 'top' || direction === 'centerV' || direction === 'bottom') {
-            obj.set('top', newCenterY - centerOffsetY);
-        }
+        // 4. Map Absolute Delta back to Local Group Space
+        // We must account for Group Rotation and Scale.
+        // Rotate vector (dX, dY) by -groupAngle
+
+        const angleRad = -groupAngle * (Math.PI / 180);
+        const cos = Math.cos(angleRad);
+        const sin = Math.sin(angleRad);
+
+        // Rotate
+        let localDX = dX * cos - dY * sin;
+        let localDY = dX * sin + dY * cos;
+
+        // Scale
+        localDX /= groupScaleX;
+        localDY /= groupScaleY;
+
+        // Apply to Object
+        obj.set({
+            left: obj.left + localDX,
+            top: obj.top + localDY
+        });
 
         obj.setCoords();
-        obj.dirty = true;
     });
 
+    // Finalize
+    activeObj.addWithUpdate(); // Recalculate group bounds to wrap specific new positions
     activeObj.setCoords();
     activeObj.dirty = true;
 
-    state.canvas.renderAll();
+    state.canvas.requestRenderAll();
     saveState();
 }
 
