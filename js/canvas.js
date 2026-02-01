@@ -222,6 +222,54 @@ export function updateCanvasDimensions(width, height) {
     state.canvas.setDimensions({ width, height });
     state.canvas.renderAll();
     saveState();
+
+    // Re-apply zoom to update transform/layout if needed
+    const zoomInput = document.getElementById('zoomValue');
+    let currentVal = 1;
+    if (zoomInput) {
+        let val = parseFloat(zoomInput.value);
+        if (!isNaN(val)) currentVal = val / 100;
+    }
+    // We can access state.currentZoom directly too if initialized
+    if (state.currentZoom) currentVal = state.currentZoom;
+
+    // We need to trigger the zoom logic to update container sizes
+    // But we need to be careful about circular dependencies or if applyZoom is accessible.
+    // Since this is a separate export, applyZoom is local to initZoomControls.
+    // We should probably expose applyZoom or trigger a change.
+
+    // Simple workaround: dispatch a custom event or click the zoom input change
+    // Or better: Since this function is exported, we can't easily access the local applyZoom from initZoomControls closure.
+    // However, for the purpose of this fix, the critical part is ensuring the CSS change works.
+    // Let's rely on the user zooming or the initial setup.
+    // ACTUALLY, checking the code, initZoomControls runs once.
+    // We should probably move applyZoom out or make it accessible.
+    // For now, let's just leave this function as is, or trigger a UI update.
+
+    // Valid improvement: Just trigger a lightweight update if possible. 
+    // Given the scope, I will skip complex refactoring just for this hook unless necessary.
+    // The previous implementation didn't have it, but the plan said to add it. 
+    // Let's implement a safe dispatch.
+
+    const zoomInBtn = document.getElementById('zoomIn');
+    if (zoomInBtn) {
+        // Just a dummy toggle to refresh? No, that's hacky.
+        // Let's check if we can reach the logic.
+        // Code structure: applyZoom is inside initZoomControls.
+        // We can't reach it.
+        // I'll stick to the plan of just updating the CSS and the applyZoom logic itself.
+        // If resize happens, the user might need to zoom in/out to refresh if using transform.
+        // Browsers with 'zoom' property will handle it automatically as it's a CSS property on the element.
+        // The transform fallback is the tricky one.
+
+        // I will NOT modify this function to call applyZoom because I can't reach it easily without refactoring.
+        // I'll stick to the approved plan part about applyZoom logic, but skip the updateCanvasDimensions hook for now
+        // unless I refactor the code structure, which I should avoid if possible.
+        // Wait, I can trigger the change event on zoomInput!
+        if (zoomInput) {
+            zoomInput.dispatchEvent(new Event('change'));
+        }
+    }
 }
 
 // Background Layer Management overrides
@@ -300,8 +348,36 @@ export function initZoomControls() {
             if (CSS.supports('zoom: 1')) {
                 container.style.zoom = state.currentZoom;
             } else {
-                container.style.transform = `scale(${state.currentZoom})`;
-                container.style.transformOrigin = '0 0';
+                // Fallback for browsers that don't support zoom (Firefox, Safari)
+                // We need to scale the container and update its dimensions to force scrollbars
+                const width = state.canvas.width;
+                const height = state.canvas.height;
+
+                container.style.width = (width * state.currentZoom) + 'px';
+                container.style.height = (height * state.currentZoom) + 'px';
+
+                // Scale the inner canvas wrapper provided by fabric
+                // Note: Fabric wraps the canvas in a .canvas-container div (same class name as our outer one, potentially confusing)
+                // But here 'container' is our outer .canvas-container from HTML
+
+                // We actually need to target the immediate child of our container which holds the canvas
+                // Fabric creates a wrapper div. We can scale that or the canvas itself.
+                // Best approach for transform is likely:
+                // 1. Set outer container size (handled above)
+                // 2. Scale the inner content to fit that size
+
+                const fabricWrapper = container.querySelector('.canvas-container'); // Fabric adds another div with this class
+                if (fabricWrapper) {
+                    fabricWrapper.style.transform = `scale(${state.currentZoom})`;
+                    fabricWrapper.style.transformOrigin = '0 0';
+                } else {
+                    // Fallback if structure is different
+                    const canvasEl = container.querySelector('canvas');
+                    if (canvasEl) {
+                        canvasEl.style.transform = `scale(${state.currentZoom})`;
+                        canvasEl.style.transformOrigin = '0 0';
+                    }
+                }
             }
         }
     }
