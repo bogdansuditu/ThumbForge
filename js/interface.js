@@ -336,6 +336,9 @@ export function updateLayersList() {
             layerItem.addEventListener('click', (e) => {
                 if (e.target.closest('.layer-control-btn') || e.target.classList.contains('group-toggle') || e.target.tagName === 'INPUT') return;
 
+                // Stop if clicking on the rename input itself (though it shouldn't bubble here usually if stopped there)
+                // Also if we are clicking the name to rename, we might want to avoid full re-render loop on first click?
+
                 state.backgroundSelected = false;
 
                 // Handle Multi-Selection
@@ -347,7 +350,10 @@ export function updateLayersList() {
                 // We restrict Shift-Select range to siblings only for simplicity and stability
                 const siblings = obj.group ? obj.group.getObjects() : state.canvas.getObjects();
 
+                let needsRender = true;
+
                 if (isShift && state.lastSelectedLayerObject && (state.lastSelectedLayerObject.group === obj.group)) {
+                    // ... Shift logic (Keep existing) ...
                     // Range Selection
                     const idx1 = siblings.indexOf(state.lastSelectedLayerObject);
                     const idx2 = siblings.indexOf(obj);
@@ -358,28 +364,25 @@ export function updateLayersList() {
                         const range = siblings.slice(start, end + 1);
 
                         if (!obj.group) {
-                            // Top Level: Select all in range
-                            // Exclude any non-selectable if necessary (though getObjects usually returns selectables)
                             if (range.length > 1) {
-                                // Create new selection
-                                state.canvas.discardActiveObject(); // Clear current
+                                state.canvas.discardActiveObject();
                                 const sel = new fabric.ActiveSelection(range, { canvas: state.canvas });
                                 state.canvas.setActiveObject(sel);
                             } else {
                                 state.canvas.setActiveObject(range[0]);
                             }
                         } else {
-                            // Inside Group: Can only select parent group on canvas
                             state.canvas.setActiveObject(obj.group);
                         }
                     }
                 } else if (isCtrl) {
+                    // ... Ctrl logic (Keep existing) ...
                     // Toggle Selection
                     if (!obj.group) {
                         const isSelected = activeObjects.includes(obj);
 
                         if (isSelected) {
-                            // Remove from selection
+                            // Remove
                             const newSet = activeObjects.filter(o => o !== obj);
                             state.canvas.discardActiveObject();
                             if (newSet.length === 1) {
@@ -389,32 +392,48 @@ export function updateLayersList() {
                                 state.canvas.setActiveObject(sel);
                             }
                         } else {
-                            // Add to selection
+                            // Add
                             const newSet = [...activeObjects, obj];
                             state.canvas.discardActiveObject();
                             const sel = new fabric.ActiveSelection(newSet, { canvas: state.canvas });
                             state.canvas.setActiveObject(sel);
                         }
                     } else {
-                        // Inside Group: Select parent group
                         state.canvas.setActiveObject(obj.group);
                     }
                     state.lastSelectedLayerObject = obj;
                 } else {
                     // Single Selection
-                    state.canvas.discardActiveObject(); // Clear previous
-                    if (obj.group) {
-                        state.canvas.setActiveObject(obj.group);
+                    // OPTIMIZATION: If already selected and single, don't re-render list to allow double-click!
+                    const currentActive = state.canvas.getActiveObject();
+                    if (currentActive === obj && activeObjects.length === 1 && !obj.group) {
+                        // Already selected single object. 
+                        // Check if we need to set lastSelected?
+                        state.lastSelectedLayerObject = obj;
+                        state.activeLayerObject = obj;
+                        // Prevent re-render to allow dblclick to pass through to the element
+                        needsRender = false;
                     } else {
-                        state.canvas.setActiveObject(obj);
+                        state.canvas.discardActiveObject();
+                        if (obj.group) {
+                            state.canvas.setActiveObject(obj.group);
+                        } else {
+                            state.canvas.setActiveObject(obj);
+                        }
+                        state.lastSelectedLayerObject = obj;
                     }
-                    state.lastSelectedLayerObject = obj;
                 }
 
                 state.activeLayerObject = obj; // Always track specific clicked item
-                state.canvas.renderAll();
-                updateLayersList();
-                updatePropertiesPanel();
+
+                if (needsRender) {
+                    state.canvas.renderAll();
+                    updateLayersList();
+                    updatePropertiesPanel();
+                } else {
+                    // Update properties panel just in case, but skip list render
+                    updatePropertiesPanel();
+                }
             });
 
             // Drag Events (Placeholder for now, implementation requires more complexity)
