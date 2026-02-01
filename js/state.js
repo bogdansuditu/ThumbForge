@@ -26,6 +26,7 @@ export const state = {
     cachedStrokeWidth: null,
     cachedFill: null,
     activeLayerObject: null,
+    lastSelectedLayerObject: null,
     defaults: {
         fill: '#ffffff',
         stroke: '#000000',

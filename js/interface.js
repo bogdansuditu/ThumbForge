@@ -337,62 +337,81 @@ export function updateLayersList() {
                 if (e.target.closest('.layer-control-btn') || e.target.classList.contains('group-toggle') || e.target.tagName === 'INPUT') return;
 
                 state.backgroundSelected = false;
-                state.activeLayerObject = obj; // Set specifically this object
 
-                // Handle Shift+Click for multi-selection (simple version)
-                // For nested groups, multi-select is tricky. For now, just Select the single object.
-                // If it's inside a group, we might want to select the group unless we implement deep selection.
-                // Fabric selects the group if you click an object inside it.
-                // To support deep selection, we need to handle specific selection logic.
+                // Handle Multi-Selection
+                const isShift = e.shiftKey;
+                const isCtrl = e.metaKey || e.ctrlKey;
+                const activeObjects = state.canvas.getActiveObjects();
 
-                if (parentGroup) {
-                    // Selecting an item inside a group is tricky in Fabric 5.
-                    // Usually you modify the group selection or select the group.
-                    // For simplicity: Select the PARENT GROUP if logic dictates, OR select the item but drag the whole group.
-                    // Let's settle on: Selecting item in layer list selects the TOP LEVEL object (Group) it belongs to, unless we implement deep diving.
-                    // But user wants to reorder inside group?
-                    // If we can reorder, we must be able to select?
-                    // Actually, Fabric doesn't easily support selecting a child of a group on canvas without entering 'group editing' mode (not native).
-                    // So, let's just highlight the item in the list, but on Canvas select the Top Parent Group.
-                }
+                // Determine context (Root or Group)
+                // We restrict Shift-Select range to siblings only for simplicity and stability
+                const siblings = obj.group ? obj.group.getObjects() : state.canvas.getObjects();
 
-                if (obj.isBackground) {
-                    // Logic handled in background item
+                if (isShift && state.lastSelectedLayerObject && (state.lastSelectedLayerObject.group === obj.group)) {
+                    // Range Selection
+                    const idx1 = siblings.indexOf(state.lastSelectedLayerObject);
+                    const idx2 = siblings.indexOf(obj);
+
+                    if (idx1 !== -1 && idx2 !== -1) {
+                        const start = Math.min(idx1, idx2);
+                        const end = Math.max(idx1, idx2);
+                        const range = siblings.slice(start, end + 1);
+
+                        if (!obj.group) {
+                            // Top Level: Select all in range
+                            // Exclude any non-selectable if necessary (though getObjects usually returns selectables)
+                            if (range.length > 1) {
+                                // Create new selection
+                                state.canvas.discardActiveObject(); // Clear current
+                                const sel = new fabric.ActiveSelection(range, { canvas: state.canvas });
+                                state.canvas.setActiveObject(sel);
+                            } else {
+                                state.canvas.setActiveObject(range[0]);
+                            }
+                        } else {
+                            // Inside Group: Can only select parent group on canvas
+                            state.canvas.setActiveObject(obj.group);
+                        }
+                    }
+                } else if (isCtrl) {
+                    // Toggle Selection
+                    if (!obj.group) {
+                        const isSelected = activeObjects.includes(obj);
+
+                        if (isSelected) {
+                            // Remove from selection
+                            const newSet = activeObjects.filter(o => o !== obj);
+                            state.canvas.discardActiveObject();
+                            if (newSet.length === 1) {
+                                state.canvas.setActiveObject(newSet[0]);
+                            } else if (newSet.length > 1) {
+                                const sel = new fabric.ActiveSelection(newSet, { canvas: state.canvas });
+                                state.canvas.setActiveObject(sel);
+                            }
+                        } else {
+                            // Add to selection
+                            const newSet = [...activeObjects, obj];
+                            state.canvas.discardActiveObject();
+                            const sel = new fabric.ActiveSelection(newSet, { canvas: state.canvas });
+                            state.canvas.setActiveObject(sel);
+                        }
+                    } else {
+                        // Inside Group: Select parent group
+                        state.canvas.setActiveObject(obj.group);
+                    }
+                    state.lastSelectedLayerObject = obj;
                 } else {
-                    // If we are deep inside a group, finding the top-level parent to select on canvas
-                    let topObj = obj;
-                    // Logic to find top parent could be needed if we passed parentGroup
-                    // But activeObject in Fabric is usually top-level.
-
-                    // If we click a child, we can't easily set it as activeObject if it's in a group.
-                    // So we select the top-level group.
-                    // BUT, to allow property editing of children, we might need a custom 'activeObject' concept or just update properties directly on the child `obj`.
-                    // The properties panel uses `state.canvas.getActiveObject()`.
-                    // If we want to edit child properties, we need to mock the selection or support it.
-                    // For V1, let's select the object if it's top level, or its group if it's nested.
+                    // Single Selection
+                    state.canvas.discardActiveObject(); // Clear previous
+                    if (obj.group) {
+                        state.canvas.setActiveObject(obj.group);
+                    } else {
+                        state.canvas.setActiveObject(obj);
+                    }
+                    state.lastSelectedLayerObject = obj;
                 }
 
-                // STANDARD BEHAVIOR:
-                // Fabric 5: Objects in groups are not selectable independently.
-                // So we select the group.
-                // Unless we ungroup temporarily? No.
-                // We'll select the object itself if possible? No, it throws error.
-                // We select the top parent.
-
-                // Workaround: We can't really select a child of a group on canvas securely.
-                // So clicking a child layer will select the Group.
-
-                // Let's traverse up to top level for selection
-                // Since we don't have parent links easily without search,
-                // we rely on the fact that 'obj' passed here IS a top level object if parentGroup is null.
-
-                if (parentGroup) {
-                    // It's a child. Select the parent group visually on canvas
-                    state.canvas.setActiveObject(parentGroup);
-                } else {
-                    state.canvas.setActiveObject(obj);
-                }
-
+                state.activeLayerObject = obj; // Always track specific clicked item
                 state.canvas.renderAll();
                 updateLayersList();
                 updatePropertiesPanel();
