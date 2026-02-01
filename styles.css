@@ -661,7 +661,7 @@ input[type=number] {
     border-radius: 2px;
 }
 
-.status-bar .icon-btn {
+.top-toolbar .icon-btn {
     width: 20px;
     height: 20px;
     padding: 3px;
@@ -675,10 +675,11 @@ input[type=number] {
     justify-content: center;
 }
 
-.status-bar .icon-btn:hover {
+.top-toolbar .icon-btn:hover {
     background: #3e3e3e;
     color: #fff;
 }
+
 /* Custom Select Dropdown for Font Preview */
 .custom-select-container {
     position: relative;
@@ -732,7 +733,8 @@ input[type=number] {
     padding: 6px 8px;
     cursor: pointer;
     color: #cccccc;
-    font-size: 13px; /* Slightly larger for readability of font styles */
+    font-size: 13px;
+    /* Slightly larger for readability of font styles */
 }
 
 .custom-option:hover {
