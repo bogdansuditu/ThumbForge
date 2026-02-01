@@ -338,7 +338,7 @@ export function clearCanvas() {
 }
 
 export function deleteLayer() {
-    const activeObj = state.activeLayerObject || state.canvas.getActiveObject();
+    const activeObj = state.canvas.getActiveObject() || state.activeLayerObject;
     if (activeObj) {
         if (activeObj.group) {
             // Remove from group
