@@ -939,52 +939,65 @@ export function updatePropertiesPanel() {
                 <div style="flex: 1">
                      ${activeObj.shadow ?
             `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', null); updatePropertiesPanel();">Remove Shadow</button>` :
-            `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,0.5)', blur: 5, offsetX: 5, offsetY: 5 })); updatePropertiesPanel();">Add Shadow</button>`
+            `<button class="btn" style="width:100%" onclick="updateObjectProperty('shadow', new fabric.Shadow({ color: 'rgba(0,0,0,1)', blur: 5, offsetX: 5, offsetY: 5 })); updatePropertiesPanel();">Add Shadow</button>`
         }
                 </div>
             </div>
 
-            ${activeObj.shadow ? `
+            ${activeObj.shadow ? (() => {
+            let shadowOpacity = 1;
+            if (activeObj.shadow.color) {
+                const match = activeObj.shadow.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+                if (match && match[4] !== undefined) shadowOpacity = parseFloat(match[4]);
+            }
+            return `
+                <div class="property-group">
+                    <label class="property-label" ondblclick="updateShadowProperty('intensity', 100)" title="Double click to reset">Intensity</label>
+                    <div class="range-container">
+                        <input type="range" min="0" max="100" value="${Math.round(shadowOpacity * 100)}"
+                               oninput="updateShadowProperty('intensity', parseInt(this.value)); this.nextElementSibling.textContent = this.value + '%'">
+                        <span class="range-value">${Math.round(shadowOpacity * 100)}%</span>
+                    </div>
+                </div>
+
                 <div class="property-group">
                     <label class="property-label" ondblclick="updateShadowProperty('blur', 0)" title="Double click to reset">Shadow Blur</label>
-                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
-                        <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}" style="flex: 1; min-width: 0;"
-                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.value = this.value">
-                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.blur || 0}"
-                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    <div class="range-container">
+                        <input type="range" min="0" max="100" value="${activeObj.shadow.blur || 0}"
+                               oninput="updateShadowProperty('blur', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                        <span class="range-value">${activeObj.shadow.blur || 0}</span>
                     </div>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label" ondblclick="updateShadowProperty('offsetX', 0)" title="Double click to reset">Offset X</label>
-                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
-                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}" style="flex: 1; min-width: 0;"
-                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.value = this.value">
-                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetX || 0}"
-                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    <div class="range-container">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetX || 0}"
+                               oninput="updateShadowProperty('offsetX', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                        <span class="range-value">${activeObj.shadow.offsetX || 0}</span>
                     </div>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label" ondblclick="updateShadowProperty('offsetY', 0)" title="Double click to reset">Offset Y</label>
-                    <div style="display: flex; align-items: center; gap: 4px; width: 100%; min-width: 0;">
-                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}" style="flex: 1; min-width: 0;"
-                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.value = this.value">
-                        <input type="number" class="property-input" style="width: 45px; padding: 2px 4px; text-align: right; flex-shrink: 0;" value="${activeObj.shadow.offsetY || 0}"
-                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.previousElementSibling.value = this.value">
+                    <div class="range-container">
+                        <input type="range" min="-50" max="50" value="${activeObj.shadow.offsetY || 0}"
+                               oninput="updateShadowProperty('offsetY', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                        <span class="range-value">${activeObj.shadow.offsetY || 0}</span>
                     </div>
                 </div>
 
                 <div class="property-group">
                     <label class="property-label">Shadow Color</label>
                     <div class="color-picker-row">
-                        <div class="color-preview" style="background-color: ${activeObj.shadow.color || 'rgba(0,0,0,0.5)'}">
-                            <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,0.5)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
+                        <div class="color-preview" style="background-color: ${activeObj.shadow.color || 'rgba(0,0,0,1)'}">
+                            <input type="color" value="${(activeObj.shadow.color || 'rgba(0,0,0,1)').replace(/rgba?\((\d+),\s*(\d+),\s*(\d+).*\)/, (m, r, g, b) => '#' + [r, g, b].map(x => parseInt(x).toString(16).padStart(2, '0')).join(''))}"
                                    oninput="updateShadowProperty('color', this.value)">
                         </div>
                     </div>
                 </div>
-            ` : ''}
+            `;
+        })() : ''}
             `;
 
 
@@ -1406,7 +1419,7 @@ export function toggleShadow() {
         activeObj.shadow = null;
     } else {
         activeObj.shadow = new fabric.Shadow({
-            color: 'rgba(0,0,0,0.5)',
+            color: 'rgba(0,0,0,1)',
             blur: 10,
             offsetX: 4,
             offsetY: 4
@@ -1422,16 +1435,55 @@ export function updateShadowProperty(property, value) {
     const activeObj = state.canvas.getActiveObject();
     if (!activeObj || !activeObj.shadow) return;
 
-    activeObj.shadow[property] = value;
+    if (property === 'intensity') {
+        const currentColor = activeObj.shadow.color || 'rgba(0,0,0,1)';
+        const opacity = value / 100;
+        let newColor;
+        // Try to parse rgba
+        const match = currentColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+        if (match) {
+            newColor = `rgba(${match[1]}, ${match[2]}, ${match[3]}, ${opacity})`;
+        } else if (currentColor.startsWith('#')) {
+            const r = parseInt(currentColor.slice(1, 3), 16);
+            const g = parseInt(currentColor.slice(3, 5), 16);
+            const b = parseInt(currentColor.slice(5, 7), 16);
+            newColor = `rgba(${r},${g},${b},${opacity})`;
+        } else {
+            // Fallback
+            newColor = `rgba(0,0,0,${opacity})`;
+        }
+        activeObj.shadow.color = newColor;
+    } else if (property === 'color') {
+        // When color changes (from picker), preserve existing intensity
+        let currentOpacity = 1;
+        if (activeObj.shadow.color) {
+            const match = activeObj.shadow.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
+            if (match && match[4] !== undefined) currentOpacity = parseFloat(match[4]);
+        }
+
+        if (value.startsWith('#')) {
+            const r = parseInt(value.slice(1, 3), 16);
+            const g = parseInt(value.slice(3, 5), 16);
+            const b = parseInt(value.slice(5, 7), 16);
+            activeObj.shadow.color = `rgba(${r},${g},${b},${currentOpacity})`;
+        } else {
+            activeObj.shadow.color = value;
+        }
+    } else {
+        activeObj.shadow[property] = value;
+    }
+
     state.canvas.renderAll();
     saveState();
 
-    const inputs = document.querySelectorAll(`input[oninput*="updateShadowProperty('${property}'"]`);
-    inputs.forEach(input => {
-        if (document.activeElement !== input) {
-            input.value = value;
-        }
-    });
+    if (property !== 'intensity' && property !== 'color') {
+        const inputs = document.querySelectorAll(`input[oninput*="updateShadowProperty('${property}'"]`);
+        inputs.forEach(input => {
+            if (document.activeElement !== input) {
+                input.value = value;
+            }
+        });
+    }
 }
 
 // Alignment Functions
