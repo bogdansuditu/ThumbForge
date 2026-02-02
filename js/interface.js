@@ -553,37 +553,11 @@ export function updatePropertiesPanel() {
 
     // Common properties
     html += `
-        <div class="property-group">
-            <label class="property-label">Opacity</label>
-            <div class="range-container">
-                <input type="range" min="0" max="100" value="${(activeObj.opacity || 1) * 100}"
-                       oninput="updateObjectProperty('opacity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
-                <span class="range-value">${Math.round((activeObj.opacity || 1) * 100)}%</span>
-            </div>
-        </div>
     `;
 
     // Text specific
     if (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox') {
         html += `
-            <div class="property-group">
-                <label class="property-label">Size</label>
-                <div class="range-container">
-                    <input type="range" min="10" max="300" value="${activeObj.fontSize}"
-                           oninput="updateObjectProperty('fontSize', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
-                    <span class="range-value">${activeObj.fontSize}</span>
-                </div>
-            </div>
-
-            <div class="property-group">
-                <label class="property-label">Line Spacing</label>
-                <div class="range-container">
-                    <input type="range" min="0.5" max="3" step="0.1" value="${activeObj.lineHeight || 1.16}"
-                           oninput="updateObjectProperty('lineHeight', parseFloat(this.value)); this.nextElementSibling.textContent = this.value">
-                    <span class="range-value">${activeObj.lineHeight || 1.16}</span>
-                </div>
-            </div>
-
             <div class="property-group" style="z-index: 100; position: relative;">
                 <label class="property-label">Font</label>
                 <!-- Custom Dropdown -->
@@ -605,6 +579,24 @@ export function updatePropertiesPanel() {
         ).join('')}
                         `).join('')}
                     </div>
+                </div>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Size</label>
+                <div class="range-container">
+                    <input type="range" min="10" max="300" value="${activeObj.fontSize}"
+                           oninput="updateObjectProperty('fontSize', parseInt(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.fontSize}</span>
+                </div>
+            </div>
+
+            <div class="property-group">
+                <label class="property-label">Line Spacing</label>
+                <div class="range-container">
+                    <input type="range" min="0.5" max="3" step="0.1" value="${activeObj.lineHeight || 1.16}"
+                           oninput="updateObjectProperty('lineHeight', parseFloat(this.value)); this.nextElementSibling.textContent = this.value">
+                    <span class="range-value">${activeObj.lineHeight || 1.16}</span>
                 </div>
             </div>
 
@@ -925,6 +917,15 @@ export function updatePropertiesPanel() {
             </div>
 
             <div class="property-group">
+                <label class="property-label">Opacity</label>
+                <div class="range-container">
+                    <input type="range" min="0" max="100" value="${(activeObj.opacity || 1) * 100}"
+                        oninput="updateObjectProperty('opacity', this.value / 100); this.nextElementSibling.textContent = this.value + '%'">
+                    <span class="range-value">${Math.round((activeObj.opacity || 1) * 100)}%</span>
+                </div>
+            </div>
+            <div class="property-separator"></div>
+            <div class="property-group">
                 <label class="property-label">Blur</label>
                 <div class="range-container">
                     <input type="range" min="0" max="100" value="${activeObj.blurAmount || 0}"
@@ -932,7 +933,7 @@ export function updatePropertiesPanel() {
                     <span class="range-value">${activeObj.blurAmount || 0}%</span>
                 </div>
             </div>
-
+            <div class="property-separator"></div>
             <div class="property-group">
                 <label class="property-label">Shadow</label>
                 <div style="flex: 1">
