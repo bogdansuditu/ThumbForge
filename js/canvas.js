@@ -284,6 +284,47 @@ function setupLayerLevelBlur() {
         const originalDrawObject = fabric.Object.prototype.drawObject;
 
         fabric.Object.prototype.drawObject = function (ctx) {
+            // Check for Shadow Amplification (High Intensity)
+            const hasShadowAmp = this.shadow && this.shadowIntensity > 1;
+            const hasBlur = this.blurAmount && this.blurAmount > 0;
+
+            if (hasShadowAmp && supportsFilter) {
+                // Combined rendering: Blur + Multi-pass Shadow
+                const origShadow = this.shadow;
+                this.shadow = null; // Disable native shadow drawing
+
+                let filterVal = '';
+
+                // 1. Apply Blur
+                if (hasBlur) {
+                    filterVal += `blur(${this.blurAmount}px) `;
+                }
+
+                // 2. Apply Stacked Shadows
+                // Limit passes to reasonable max (e.g., 5 for 500%)
+                const passes = Math.min(Math.ceil(this.shadowIntensity), 10);
+                const color = origShadow.color;
+                const blur = origShadow.blur;
+                const x = origShadow.offsetX;
+                const y = origShadow.offsetY;
+
+                const shadowStr = `drop-shadow(${x}px ${y}px ${blur}px ${color})`;
+
+                for (let i = 0; i < passes; i++) {
+                    filterVal += `${shadowStr} `;
+                }
+
+                ctx.filter = filterVal.trim();
+                try {
+                    originalDrawObject.call(this, ctx);
+                } finally {
+                    ctx.filter = 'none';
+                    this.shadow = origShadow; // Restore
+                }
+                return;
+            }
+
+            // Normal Blur Logic (if no shadow amp or fallback)
             if (!this.blurAmount || this.blurAmount <= 0) {
                 originalDrawObject.call(this, ctx);
                 return;

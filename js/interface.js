@@ -1424,6 +1424,7 @@ export function toggleShadow() {
             offsetX: 4,
             offsetY: 4
         });
+        activeObj.shadowIntensity = 1;
     }
 
     state.canvas.renderAll();
@@ -1436,8 +1437,14 @@ export function updateShadowProperty(property, value) {
     if (!activeObj || !activeObj.shadow) return;
 
     if (property === 'intensity') {
+        const rawIntensity = value / 100;
+        activeObj.shadowIntensity = rawIntensity;
+
+        // For actual shadow color opacity, we clamp to 1. 
+        // Anything > 1 is handled by custom rendering in canvas.js
+        const opacity = Math.min(rawIntensity, 1);
+
         const currentColor = activeObj.shadow.color || 'rgba(0,0,0,1)';
-        const opacity = value / 100;
         let newColor;
         // Try to parse rgba
         const match = currentColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
@@ -1454,18 +1461,17 @@ export function updateShadowProperty(property, value) {
         }
         activeObj.shadow.color = newColor;
     } else if (property === 'color') {
-        // When color changes (from picker), preserve existing intensity
-        let currentOpacity = 1;
-        if (activeObj.shadow.color) {
-            const match = activeObj.shadow.color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
-            if (match && match[4] !== undefined) currentOpacity = parseFloat(match[4]);
-        }
+        // When color changes (from picker), preserve existing intensity (clamped to 1 for the color string)
+        // The picker returns hex #RRGGBB usually
+
+        let currentIntensity = activeObj.shadowIntensity !== undefined ? activeObj.shadowIntensity : 1;
+        const opacity = Math.min(currentIntensity, 1);
 
         if (value.startsWith('#')) {
             const r = parseInt(value.slice(1, 3), 16);
             const g = parseInt(value.slice(3, 5), 16);
             const b = parseInt(value.slice(5, 7), 16);
-            activeObj.shadow.color = `rgba(${r},${g},${b},${currentOpacity})`;
+            activeObj.shadow.color = `rgba(${r},${g},${b},${opacity})`;
         } else {
             activeObj.shadow.color = value;
         }
