@@ -13,9 +13,13 @@ export function initInterface() {
     const strokePicker = document.getElementById('defaultStrokeColor');
 
     if (fillPicker) {
+        // Initial Visual Update
+        fillPicker.parentElement.style.backgroundColor = (state.defaults.fill === 'transparent') ? '#ffffff' : state.defaults.fill;
         fillPicker.value = (state.defaults.fill === 'transparent') ? '#ffffff' : state.defaults.fill;
         fillPicker.addEventListener('input', (e) => {
             state.defaults.fill = e.target.value;
+            // Visual Update
+            fillPicker.parentElement.style.backgroundColor = e.target.value;
             // If user manually picks a color, ensure resizing strike is off (optional, but logical)
             const strikeDiv = document.getElementById('defaultFillStrike');
             if (strikeDiv) strikeDiv.style.display = 'none';
@@ -61,6 +65,7 @@ export function initInterface() {
 
                 // Update picker visual value
                 fillPicker.value = state.defaults.fill;
+                fillPicker.parentElement.style.backgroundColor = state.defaults.fill;
 
                 // Sync with selection
                 if (state.canvas) {
@@ -98,9 +103,13 @@ export function initInterface() {
     }
 
     if (strokePicker) {
+        // Initial Visual Update (Override gradient with solid color if needed, or update gradient?)
+        // Applying solid background color works because ring cutout is on top.
+        strokePicker.parentElement.style.background = state.defaults.stroke;
         strokePicker.value = state.defaults.stroke;
         strokePicker.addEventListener('input', (e) => {
             state.defaults.stroke = e.target.value;
+            strokePicker.parentElement.style.background = e.target.value;
             saveDefaults();
 
             // Apply to active selection
@@ -149,9 +158,12 @@ export function initInterface() {
                     if (activeObjects.length > 0) {
                         activeObjects.forEach(obj => {
                             obj.set('strokeWidth', state.defaults.strokeWidth);
-                            // Also ensure stroke color is applied if it was transparent or different
+                            // Also ensure stroke color is applied
                             obj.set('stroke', state.defaults.stroke);
                         });
+                        // Visual Sync
+                        strokePicker.parentElement.style.background = state.defaults.stroke;
+
                         state.canvas.requestRenderAll();
                         saveState();
                     }
@@ -180,6 +192,174 @@ export function initInterface() {
                 }
             }
 
+            saveDefaults();
+        });
+    }
+
+    // --- SWAP COLORS LOGIC ---
+    const swapBtn = document.getElementById('swapColorsBtn');
+    if (swapBtn) {
+        swapBtn.addEventListener('click', () => {
+            const fillPicker = document.getElementById('defaultFillColor');
+            const strokePicker = document.getElementById('defaultStrokeColor');
+            const fillStrike = document.getElementById('defaultFillStrike');
+            const strokeStrike = document.getElementById('defaultStrokeStrike');
+
+            // Current States
+            const isFillTransparent = (state.defaults.fill === 'transparent');
+            const isStrokeDisabled = (state.defaults.strokeWidth === 0);
+
+            // Current Values (Colors)
+            // If transparent, use the picker value (which is usually white or last cached)
+            // If disabled, use the picker value
+            const currentFillColor = fillPicker ? fillPicker.value : '#ffffff';
+            const currentStrokeColor = strokePicker ? strokePicker.value : '#000000';
+
+            // --- CALCULATE NEW STATES ---
+
+            // New Fill
+            // If stroke was disabled, new fill is transparent. 
+            // Else, new fill is the old stroke color.
+            let newFill;
+            if (isStrokeDisabled) {
+                newFill = 'transparent';
+            } else {
+                newFill = currentStrokeColor;
+            }
+
+            // New Stroke
+            // If fill was transparent, new stroke is disabled (width 0).
+            // Else, new stroke is old fill color, and we need a width > 0.
+            let newStrokeColor = currentStrokeColor; // default
+            let newStrokeWidth = state.defaults.strokeWidth; // default
+
+            if (isFillTransparent) {
+                newStrokeWidth = 0;
+                // Color remains what it was conceptually, or we can swap visual inputs?
+                // Visual swap: New Stroke Picker Value = Old Fill Picker Value
+                newStrokeColor = currentFillColor;
+            } else {
+                newStrokeColor = currentFillColor;
+                // Enable stroke if it was disabled
+                if (isStrokeDisabled) {
+                    newStrokeWidth = state.cachedStrokeWidth || 2;
+                    if (newStrokeWidth === 0) newStrokeWidth = 2; // Safety
+                } else {
+                    // Keep current width? Or if we strictly swap, maybe we should swap presence?
+                    // "No Fill, Red Stroke" -> "Red Fill, No Stroke".
+                    // "Blue Fill, Red Stroke" -> "Red Fill, Blue Stroke".
+                    // "Blue Fill, No Stroke" -> "No Fill, Blue Stroke".
+                    // This implies if we are enabling stroke, we use cached width.
+                }
+            }
+
+            // --- APPLY NEW STATES ---
+
+            // 1. Update State
+            state.defaults.fill = newFill;
+            state.defaults.stroke = newStrokeColor;
+            state.defaults.strokeWidth = newStrokeWidth;
+
+            // 2. Update UI
+            if (fillPicker) {
+                fillPicker.value = (newFill === 'transparent') ? '#ffffff' : newFill;
+                fillPicker.parentElement.style.backgroundColor = (newFill === 'transparent') ? '#ffffff' : newFill;
+            }
+            if (strokePicker) {
+                strokePicker.value = newStrokeColor;
+                strokePicker.parentElement.style.background = newStrokeColor;
+            }
+
+            if (fillStrike) fillStrike.style.display = (newFill === 'transparent') ? 'block' : 'none';
+            if (strokeStrike) strokeStrike.style.display = (newStrokeWidth === 0) ? 'block' : 'none';
+
+            // 3. Update Active Selection
+            if (state.canvas) {
+                const activeObjects = state.canvas.getActiveObjects();
+                if (activeObjects.length > 0) {
+                    activeObjects.forEach(obj => {
+                        obj.set('fill', state.defaults.fill);
+                        obj.set('stroke', state.defaults.stroke);
+                        // Only update strokeWidth if we toggled presence? 
+                        // Or always update? If we swap colors, we might want to keep the object's specific stroke width 
+                        // UNLESS we are specifically toggling "No Stroke".
+                        // Logic: If transitioning FROM No Stroke TO Stroke, apply default width.
+                        // If transitioning FROM Stroke TO No Stroke, apply 0.
+                        // If Stroke -> Stroke, keep object width? Or apply global default?
+                        // Usually "Swap" applies global default logic to selection? 
+                        // Let's effectively apply the new calculated global default to the object for consistency.
+
+                        // BUT: If active object has strokeWidth 5, and we swap "Blue Fill / Red Stroke (default width 2)",
+                        // we expect "Red Fill / Blue Stroke". 
+                        // If we overwrite width with 2, we lose the 5. 
+                        // Let's refine: 
+                        // If newStrokeWidth is 0, object width = 0.
+                        // If newStrokeWidth > 0 AND object width was 0, object width = newStrokeWidth.
+                        // If newStrokeWidth > 0 AND object width > 0, keep object width (just swap color).
+
+                        if (newStrokeWidth === 0) {
+                            obj.set('strokeWidth', 0);
+                        } else {
+                            if (obj.strokeWidth === 0) {
+                                obj.set('strokeWidth', newStrokeWidth);
+                            }
+                        }
+                    });
+                    state.canvas.requestRenderAll();
+                    saveState();
+                }
+            }
+
+            saveDefaults();
+        });
+    }
+
+    // --- RESET COLORS LOGIC ---
+    const resetBtn = document.getElementById('resetColorsBtn');
+    if (resetBtn) {
+        resetBtn.addEventListener('click', () => {
+            const fillPicker = document.getElementById('defaultFillColor');
+            const strokePicker = document.getElementById('defaultStrokeColor');
+            const fillStrike = document.getElementById('defaultFillStrike');
+            const strokeStrike = document.getElementById('defaultStrokeStrike');
+
+            // Set Defaults
+            state.defaults.fill = '#ffffff';
+            state.defaults.stroke = '#000000';
+
+            // Ensure stroke is enabled if it was disabled
+            if (state.defaults.strokeWidth === 0) {
+                state.defaults.strokeWidth = state.cachedStrokeWidth || 2;
+                if (state.defaults.strokeWidth === 0) state.defaults.strokeWidth = 2;
+            }
+
+            // Update UI
+            if (fillPicker) {
+                fillPicker.value = '#ffffff';
+                fillPicker.parentElement.style.backgroundColor = '#ffffff';
+            }
+            if (strokePicker) {
+                strokePicker.value = '#000000';
+                strokePicker.parentElement.style.background = '#000000';
+            }
+            if (fillStrike) fillStrike.style.display = 'none';
+            if (strokeStrike) strokeStrike.style.display = 'none';
+
+            // Update Selection
+            if (state.canvas) {
+                const activeObjects = state.canvas.getActiveObjects();
+                if (activeObjects.length > 0) {
+                    activeObjects.forEach(obj => {
+                        obj.set('fill', '#ffffff');
+                        obj.set('stroke', '#000000');
+                        if (obj.strokeWidth === 0) {
+                            obj.set('strokeWidth', state.defaults.strokeWidth);
+                        }
+                    });
+                    state.canvas.requestRenderAll();
+                    saveState();
+                }
+            }
             saveDefaults();
         });
     }

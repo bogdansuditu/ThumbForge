@@ -248,33 +248,7 @@
         <!-- Canvas Size Controls -->
         <div class="toolbar-group">
             <!-- Defaults Controls -->
-            <div class="toolbar-group" style="margin-right: 15px;">
-                <div class="color-picker-wrapper" title="Default Fill Color"
-                    style="display: flex; align-items: center; margin-right: 10px;">
-                    <div
-                        style="width: 20px; height: 20px; border-radius: 4px; overflow: hidden; border: 1px solid #444; position: relative;">
-                        <input type="color" id="defaultFillColor" value="#ffffff"
-                            style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; border: none; padding: 0;">
-                        <div id="defaultFillStrike"
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; background: linear-gradient(to bottom right, transparent calc(50% - 1.5px), #ff0000 calc(50% - 1.5px), #ff0000 calc(50% + 1.5px), transparent calc(50% + 1.5px)); z-index: 2;">
-                        </div>
-                    </div>
-                </div>
-                <div class="color-picker-wrapper" title="Default Stroke Color"
-                    style="display: flex; align-items: center;">
-                    <div
-                        style="width: 20px; height: 20px; border-radius: 4px; overflow: hidden; border: 1px solid #444; position: relative; background: conic-gradient(from 180deg at 50% 50%, #000000 0deg, #000000 360deg);">
-                        <div
-                            style="position: absolute; top: 3px; left: 3px; right: 3px; bottom: 3px; background: #2a2a2a; pointer-events: none; border-radius: 2px;">
-                        </div>
-                        <div id="defaultStrokeStrike"
-                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: none; background: linear-gradient(to bottom right, transparent calc(50% - 1.5px), #ff0000 calc(50% - 1.5px), #ff0000 calc(50% + 1.5px), transparent calc(50% + 1.5px)); z-index: 2;">
-                        </div>
-                        <input type="color" id="defaultStrokeColor" value="#000000"
-                            style="position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; cursor: pointer; border: none; padding: 0;">
-                    </div>
-                </div>
-            </div>
+            <!-- Defaults Controls Moved to Left Toolbar -->
 
             <select id="canvasSize" class="select">
                 <option value="1280x720">YouTube (1280×720)</option>
@@ -361,6 +335,35 @@
                 </svg>
             </button>
             <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+
+            <div class="spacer" style="flex-grow: 1;"></div>
+
+            <div class="tools-colors">
+                <div class="color-swap-container">
+                    <div class="color-circle fill-circle"
+                        title="Fill Color (Click to change, Right-click for transparent)">
+                        <input type="color" id="defaultFillColor" value="#ffffff">
+                        <div id="defaultFillStrike" class="no-color-strike" style="display: none;"></div>
+                    </div>
+                    <div class="color-circle stroke-circle"
+                        title="Stroke Color (Click to change, Right-click for none)">
+                        <div class="stroke-ring-bg"></div>
+                        <input type="color" id="defaultStrokeColor" value="#000000">
+                        <div id="defaultStrokeStrike" class="no-color-strike" style="display: none;"></div>
+                    </div>
+                    <button id="swapColorsBtn" class="swap-colors-btn" title="Swap Fill and Stroke (X)">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" transform="rotate(270 12 12)" />
+                        </svg>
+                    </button>
+                    <button id="resetColorsBtn" class="reset-colors-btn"
+                        title="Default Colors (White Fill, Black Stroke) (D)">
+                        <div class="reset-fill"></div>
+                        <div class="reset-stroke"></div>
+                    </button>
+                </div>
+            </div>
         </div>
 
         <!-- Canvas Area -->
