@@ -7,6 +7,18 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'Amatic SC';
+    src: url('AmaticSC-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Amatic SC';
+    src: url('AmaticSC-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Anton';
     src: url('Anton-Regular.ttf') format('truetype');
     font-weight: 400;
@@ -111,6 +123,12 @@
 @font-face {
     font-family: 'Eater';
     src: url('Eater-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Electrolize';
+    src: url('Electrolize-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }
@@ -505,6 +523,24 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'Orbitron';
+    src: url('Orbitron-Black.ttf') format('truetype');
+    font-weight: 900;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Orbitron';
+    src: url('Orbitron-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Orbitron';
+    src: url('Orbitron-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Oswald';
     src: url('Oswald-Bold.ttf') format('truetype');
     font-weight: 700;
@@ -625,6 +661,12 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'Quintessential';
+    src: url('Quintessential-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Raleway';
     src: url('Raleway-Black.ttf') format('truetype');
     font-weight: 900;
@@ -739,6 +781,12 @@
     font-style: normal;
 }
 @font-face {
+    font-family: 'Rubik Scribble';
+    src: url('RubikScribble-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
     font-family: 'Satisfy';
     src: url('Satisfy-Regular.ttf') format('truetype');
     font-weight: 400;
@@ -747,6 +795,30 @@
 @font-face {
     font-family: 'Sedgwick Ave Display';
     src: url('SedgwickAveDisplay-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Space Grotesk';
+    src: url('SpaceGrotesk-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Space Grotesk';
+    src: url('SpaceGrotesk-Light.ttf') format('truetype');
+    font-weight: 300;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Space Grotesk';
+    src: url('SpaceGrotesk-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+@font-face {
+    font-family: 'Special Elite';
+    src: url('SpecialElite-Regular.ttf') format('truetype');
     font-weight: 400;
     font-style: normal;
 }

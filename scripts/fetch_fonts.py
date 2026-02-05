@@ -6,21 +6,17 @@ import urllib.error
 # Fonts to download from Google Fonts
 AVAILABLE_FONTS = [
     # Google Fonts - Sans Serif / Modern
-    'Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 
-
+    'Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 'Space Grotesk', 'Orbitron', 'Electrolize',
     # Serif / Old School
-    'Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab',
+    'Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab','Quintessential',
     # Display / Poster / Bold
-    'Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One',
-
+    'Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One', 'Amatic SC',
     # Horror / Rough
     'Creepster', 'Nosifer', 'Eater', 'Butcherman', 'Rubik Glitch', 'Rock Salt',
-
     # Handwriting / Script / Cursive
     'Pacifico', 'Dancing Script', 'Great Vibes', 'Satisfy', 'Allura', 'Permanent Marker', 'Rubik Marker Hatch', 'Sedgwick Ave Display',
-
     # Decorative / Historical / Fantasy
-    'Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp'
+    'Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp', 'Special Elite', 'Rubik Scribble'
 ]
 
 FONTS_DIR = os.path.join(os.getcwd(), 'fonts')
