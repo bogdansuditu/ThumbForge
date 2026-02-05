@@ -771,10 +771,10 @@ input[type=number] {
     height: 40px;
 }
 
-/* Base Circle Style (Size 22px) */
+/* Base Circle Style (Size 24px) */
 .color-circle {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
     border-radius: 50%;
     position: absolute;
     /* User requested border: replacing dark shadow border with visible border */
@@ -796,8 +796,8 @@ input[type=number] {
 
 /* Move stroke circle - Adjust 'bottom' and 'right' to change overlap position */
 .stroke-circle {
-    bottom: 6px;
-    right: 6px;
+    bottom: 3px;
+    right: 3px;
     z-index: 10;
     /* Stroke below */
     display: flex;
@@ -853,10 +853,10 @@ input[type=number] {
 /* Swap Button - Top Right */
 .swap-colors-btn {
     position: absolute;
-    top: -5px;
-    right: -5px;
-    width: 14px;
-    height: 14px;
+    top: -2px;
+    right: -2px;
+    width: 16px;
+    height: 16px;
     padding: 0;
     background: transparent;
     border: none;
@@ -875,15 +875,15 @@ input[type=number] {
 }
 
 .swap-colors-btn svg {
-    width: 10px;
-    height: 10px;
+    width: 12px;
+    height: 12px;
 }
 
 /* Reset Button - Bottom Left */
 .reset-colors-btn {
     position: absolute;
-    bottom: -5px;
-    left: -5px;
+    bottom: -2px;
+    left: -2px;
     width: 14px;
     height: 14px;
     padding: 0;
@@ -899,8 +899,8 @@ input[type=number] {
 }
 
 .reset-fill {
-    width: 7px;
-    height: 7px;
+    width: 9px;
+    height: 9px;
     background: #fff;
     border: 1px solid #000;
     position: absolute;
@@ -910,8 +910,8 @@ input[type=number] {
 }
 
 .reset-stroke {
-    width: 7px;
-    height: 7px;
+    width: 9px;
+    height: 9px;
     background: transparent;
     border: 1px solid #000;
     position: absolute;
