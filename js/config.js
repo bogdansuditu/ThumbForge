@@ -3,15 +3,15 @@ export const AVAILABLE_FONTS = [];
 export const FONT_GROUPS = [
     {
         category: 'Sans Serif / Modern',
-        fonts: ['Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu']
+        fonts: ['Roboto', 'Inter', 'Open Sans', 'Lato', 'Poppins', 'Oswald', 'Montserrat', 'Raleway', 'Ubuntu', 'Space Grotesk', 'Orbitron', 'Electrolize']
     },
     {
         category: 'Serif / Old School',
-        fonts: ['Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab']
+        fonts: ['Merriweather', 'Playfair Display', 'Marcellus', 'Italiana', 'Bodoni Moda', 'Noto Serif', 'Libre Baskerville', 'Josefin Slab', 'Quintessential']
     },
     {
         category: 'Display / Poster / Bold',
-        fonts: ['Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One']
+        fonts: ['Anton', 'Bebas Neue', 'Archivo Black', 'Black Ops One', 'Faster One', 'Amatic SC']
     },
     {
         category: 'Horror / Rough',
@@ -23,7 +23,7 @@ export const FONT_GROUPS = [
     },
     {
         category: 'Decorative / Historical / Fantasy',
-        fonts: ['Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp']
+        fonts: ['Lobster', 'Uncial Antiqua', 'Cinzel Decorative', 'IM Fell English', 'Pirata One', 'MedievalSharp', 'Special Elite', 'Rubik Scribble']
     }
 ];
 
