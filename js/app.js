@@ -49,6 +49,7 @@ import {
     saveImmediately
 } from './project.js';
 import { performBooleanOperation } from './booleans.js';
+import { initVectorBrushControls } from './vector-brush.js';
 
 // Expose functions to window for HTML inline event handlers
 window.updateBackgroundColor = updateBackgroundColor;
@@ -163,6 +164,7 @@ document.addEventListener('keydown', (e) => {
         if (e.key === 'm') setTool('move');
         if (e.key === 't') setTool('text');
         if (e.key === 'l') setTool('line');
+        if (e.key === 'b') setTool('brush');
         if (e.key === 'a') setTool('node-edit');
     }
 });
@@ -179,6 +181,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         await loadAvailableFonts();
         initCanvas();
         initInterface();
+        initVectorBrushControls();
     } catch (error) {
         console.error('Error initializing canvas:', error);
         alert('Error initializing canvas. Check console for details.');

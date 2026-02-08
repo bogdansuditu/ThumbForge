@@ -5,6 +5,7 @@ import { updateLayersList, clearPropertiesPanel, updatePropertiesPanel, checkSel
 import { handleUniformCorners, handleObjectMoving, handleObjectRotating, handlePathClick, handlePathMove, handlePathUp, finishPath, handleObjectUp } from './canvas-events.js';
 import { applyBlur } from './shapes.js';
 import { checkLayerLevelBlurSupport } from './utils.js';
+import { handleVectorBrushPathCreated } from './vector-brush.js';
 
 
 export function initCanvas() {
@@ -119,6 +120,7 @@ export function initCanvas() {
         handleObjectUp(e);
     });
     state.canvas.on('mouse:dblclick', finishPath);
+    state.canvas.on('path:created', handleVectorBrushPathCreated);
 
     // Try to restore from auto-save
     console.log('Restoring auto-save...');

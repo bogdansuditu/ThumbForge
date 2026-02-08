@@ -27,6 +27,11 @@ export const state = {
     cachedFill: null,
     activeLayerObject: null,
     lastSelectedLayerObject: null,
+    vectorBrush: {
+        preset: 'ink',
+        width: 6,
+        smoothing: 1.2
+    },
     defaults: {
         fill: '#ffffff',
         stroke: '#000000',

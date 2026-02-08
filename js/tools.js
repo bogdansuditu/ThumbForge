@@ -3,6 +3,7 @@ import { applyImageCornerRadius } from './shapes.js';
 import { saveState } from './project.js';
 import { AVAILABLE_FONTS } from './config.js';
 import { enterNodeEditingMode, exitNodeEditingMode } from './node-editor.js';
+import { enableVectorBrushMode, disableVectorBrushMode, setVectorBrushControlsVisibility } from './vector-brush.js';
 
 export function setTool(tool) {
     // If we are leaving node-edit mode
@@ -12,6 +13,9 @@ export function setTool(tool) {
         } catch (e) {
             console.error("Failed to exit node edit mode:", e);
         }
+    }
+    if (state.currentTool === 'brush' && tool !== 'brush') {
+        disableVectorBrushMode();
     }
 
     state.currentTool = tool;
@@ -27,6 +31,7 @@ export function setTool(tool) {
     if (closeLinesContainer) {
         closeLinesContainer.style.display = (tool === 'line') ? 'flex' : 'none';
     }
+    setVectorBrushControlsVisibility(tool === 'brush');
 
     if (state.canvas) {
         // Default selection logic
@@ -38,6 +43,8 @@ export function setTool(tool) {
             state.canvas.selection = false;
             state.canvas.defaultCursor = 'default';
             enterNodeEditingMode();
+        } else if (tool === 'brush') {
+            enableVectorBrushMode();
         }
     }
 
