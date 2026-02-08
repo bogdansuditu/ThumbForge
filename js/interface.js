@@ -398,7 +398,13 @@ export function updateLayersList() {
     // Helper for recursive rendering
     function renderObjects(objList, container, depth = 0, parentGroup = null) {
         objList.forEach((obj, index) => {
-            if (obj.temp || obj.isBackground) return;
+            if (
+                obj.temp ||
+                obj.isBackground ||
+                obj.isNodeEditorOverlay ||
+                obj.name === 'control_point' ||
+                obj.name === 'handle_line'
+            ) return;
 
             // Calculate actual index in the parent's list
             // Visual list is reversed, so index 0 is top. 
@@ -1993,4 +1999,3 @@ export function updateContextMenus() {
         convertBtn.classList.add('disabled');
     }
 }
-

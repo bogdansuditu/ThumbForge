@@ -65,7 +65,11 @@ export function initCanvas() {
         updateContextMenus();
         updateLayersList();
     });
-    state.canvas.on('object:modified', () => {
+    state.canvas.on('object:modified', (e) => {
+        const obj = e?.target;
+        if (obj && (obj.isNodeEditorOverlay || obj.name === 'control_point' || obj.name === 'handle_line')) {
+            return;
+        }
         saveState();
         updateLayersList();
     });
@@ -96,7 +100,11 @@ export function initCanvas() {
         updateLayersList();
     });
 
-    state.canvas.on('object:added', () => {
+    state.canvas.on('object:added', (e) => {
+        const obj = e?.target;
+        if (obj && (obj.isNodeEditorOverlay || obj.name === 'control_point' || obj.name === 'handle_line')) {
+            return;
+        }
         updateLayersList();
         saveState();
     });

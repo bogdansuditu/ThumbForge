@@ -5,6 +5,20 @@ import { applyImageCornerRadius, applyBlur } from './shapes.js';
 import { updateCanvasDimensions, applyBackgroundColor } from './canvas.js';
 import { setTool } from './tools.js';
 
+function isNodeEditorOverlayObject(obj) {
+    return !!obj && (
+        obj.isNodeEditorOverlay ||
+        obj.name === 'control_point' ||
+        obj.name === 'handle_line'
+    );
+}
+
+function removeNodeEditorOverlays() {
+    const objects = state.canvas.getObjects();
+    const overlays = objects.filter(isNodeEditorOverlayObject);
+    overlays.forEach(obj => state.canvas.remove(obj));
+}
+
 export function saveState() {
     if (!state.canvas || state.historyLocked) return;
     const json = JSON.stringify(state.canvas.toJSON(CUSTOM_PROPS));
@@ -41,6 +55,7 @@ export function redo() {
 export function loadState(jsonState) {
     state.historyLocked = true;
     state.canvas.loadFromJSON(jsonState, () => {
+        removeNodeEditorOverlays();
         const objects = state.canvas.getObjects();
         // const oldBgObjects = objects.filter(obj => obj.isBackground);
         // oldBgObjects.forEach(obj => state.canvas.remove(obj));
@@ -108,6 +123,7 @@ export function restoreAutoSave() {
         applyBackgroundColor();
 
         state.canvas.loadFromJSON(projectData.objects, () => {
+            removeNodeEditorOverlays();
             const objects = state.canvas.getObjects();
             // const oldBgObjects = objects.filter(obj => obj.isBackground);
             // oldBgObjects.forEach(obj => state.canvas.remove(obj));
@@ -225,6 +241,7 @@ export function loadProject() {
                 applyBackgroundColor();
 
                 state.canvas.loadFromJSON(projectData.objects, () => {
+                    removeNodeEditorOverlays();
                     const objects = state.canvas.getObjects();
                     // const oldBgObjects = objects.filter(obj => obj.isBackground);
                     // oldBgObjects.forEach(obj => state.canvas.remove(obj));

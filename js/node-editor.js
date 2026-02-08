@@ -269,6 +269,9 @@ function createAnchor(x, y, index, offsetIndex, parent) {
         hasControls: false,
         hasBorders: false,
         name: 'control_point',
+        excludeFromExport: true,
+        temp: true,
+        isNodeEditorOverlay: true,
         data: { type: 'anchor', index: index, offset: offsetIndex, parent: parent }
     });
     c.on('moving', onControlMove);
@@ -290,6 +293,9 @@ function createHandle(x, y, index, offsetIndex, parent) {
         hasControls: false,
         hasBorders: false,
         name: 'control_point',
+        excludeFromExport: true,
+        temp: true,
+        isNodeEditorOverlay: true,
         data: { type: 'handle', index: index, offset: offsetIndex, parent: parent }
     });
     c.on('moving', onControlMove);
@@ -304,7 +310,10 @@ function createLine(p1, p2) {
         strokeWidth: 1,
         selectable: false,
         evented: false,
-        name: 'handle_line'
+        name: 'handle_line',
+        excludeFromExport: true,
+        temp: true,
+        isNodeEditorOverlay: true
     });
     state.canvas.add(l);
     currentLines.push(l);
