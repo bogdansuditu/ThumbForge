@@ -22,7 +22,9 @@ export function initCanvas() {
         width: width,
         height: height,
         backgroundColor: state.defaults.backgroundColor,
-        preserveObjectStacking: true
+        preserveObjectStacking: true,
+        fireRightClick: true,
+        stopContextMenu: true
     });
 
     console.log('Applying background color...');

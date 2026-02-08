@@ -5,6 +5,7 @@ let isEditing = false;
 let currentControls = [];
 let currentLines = []; // visual connection lines
 let editingTarget = null;
+let contextMenuHandlerAttached = false;
 
 export function enterNodeEditingMode() {
     isEditing = true;
@@ -19,6 +20,7 @@ export function enterNodeEditingMode() {
     state.canvas.on('selection:updated', handleSelection);
     state.canvas.on('selection:cleared', handleCleared);
     state.canvas.on('object:moving', updateControlsOnMove);
+    attachContextMenuBlocker();
 
     const active = state.canvas.getActiveObject();
     if (active) {
@@ -29,6 +31,7 @@ export function enterNodeEditingMode() {
 export function exitNodeEditingMode() {
     isEditing = false;
     cleanupControls();
+    detachContextMenuBlocker();
 
     if (state.canvas) {
         state.canvas.off('selection:created', handleSelection);
@@ -37,6 +40,23 @@ export function exitNodeEditingMode() {
         state.canvas.off('object:moving', updateControlsOnMove);
         state.canvas.requestRenderAll();
     }
+}
+
+function attachContextMenuBlocker() {
+    if (contextMenuHandlerAttached || !state.canvas || !state.canvas.upperCanvasEl) return;
+    state.canvas.upperCanvasEl.addEventListener('contextmenu', blockContextMenu);
+    contextMenuHandlerAttached = true;
+}
+
+function detachContextMenuBlocker() {
+    if (!contextMenuHandlerAttached || !state.canvas || !state.canvas.upperCanvasEl) return;
+    state.canvas.upperCanvasEl.removeEventListener('contextmenu', blockContextMenu);
+    contextMenuHandlerAttached = false;
+}
+
+function blockContextMenu(e) {
+    if (!isEditing) return;
+    e.preventDefault();
 }
 
 function handleSelection(e) {
@@ -191,7 +211,9 @@ function createControls(pathObj) {
 
             const p = transformCoord(x, y, matrix, offsetX, offsetY);
 
-            createAnchor(p.x, p.y, index, 1, pathObj); // 1 = buffer index for x
+            if (!isDuplicateClosingAnchor(pathObj.path, index, cmd)) {
+                createAnchor(p.x, p.y, index, 1, pathObj); // 1 = buffer index for x
+            }
 
             prevAnchor = p;
             if (index === 0) firstAnchor = p;
@@ -212,7 +234,9 @@ function createControls(pathObj) {
             createLine(p1, p);
 
             createHandle(p1.x, p1.y, index, 1, pathObj);
-            createAnchor(p.x, p.y, index, 3, pathObj);
+            if (!isDuplicateClosingAnchor(pathObj.path, index, cmd)) {
+                createAnchor(p.x, p.y, index, 3, pathObj);
+            }
 
             prevAnchor = p;
         }
@@ -236,7 +260,9 @@ function createControls(pathObj) {
 
             createHandle(p1.x, p1.y, index, 1, pathObj);
             createHandle(p2.x, p2.y, index, 3, pathObj);
-            createAnchor(p.x, p.y, index, 5, pathObj);
+            if (!isDuplicateClosingAnchor(pathObj.path, index, cmd)) {
+                createAnchor(p.x, p.y, index, 5, pathObj);
+            }
 
             prevAnchor = p;
         }
@@ -275,6 +301,7 @@ function createAnchor(x, y, index, offsetIndex, parent) {
         data: { type: 'anchor', index: index, offset: offsetIndex, parent: parent }
     });
     c.on('moving', onControlMove);
+    c.on('mouseup', onControlMouseUp);
     state.canvas.add(c);
     currentControls.push(c);
 }
@@ -299,8 +326,19 @@ function createHandle(x, y, index, offsetIndex, parent) {
         data: { type: 'handle', index: index, offset: offsetIndex, parent: parent }
     });
     c.on('moving', onControlMove);
+    c.on('mouseup', onControlMouseUp);
     state.canvas.add(c);
     currentControls.push(c);
+}
+
+function onControlMouseUp(e) {
+    if (!isEditing || !e || !e.e || e.e.button !== 2) return;
+    e.e.preventDefault();
+    e.e.stopPropagation();
+
+    const control = e.target;
+    if (!control || !control.data || control.data.type !== 'anchor') return;
+    toggleNodeType(control);
 }
 
 function createLine(p1, p2) {
@@ -320,12 +358,15 @@ function createLine(p1, p2) {
 }
 
 function onControlMove(e) {
-    const control = e.transform.target;
-    if (!control.data) return;
+    const control = (e && e.transform && e.transform.target) ? e.transform.target : e.target;
+    if (!control || !control.data) return;
 
     const path = control.data.parent;
+    if (!path || !path.path) return;
     const idx = control.data.index;     // Command index
     const offset = control.data.offset; // x-coord index in command
+
+    if (!path.path[idx]) return;
 
     const matrix = path.calcTransformMatrix();
     const inv = fabric.util.invertTransform(matrix);
@@ -338,8 +379,38 @@ function onControlMove(e) {
     const pData = path.path[idx];
     pData[offset] = local.x + offsetX;     // x
     pData[offset + 1] = local.y + offsetY; // y
+    syncClosingAnchorIfNeeded(path, control.data, pData[offset], pData[offset + 1]);
 
-    // Compensation Logic
+    // Recompute path internals without translating object during drag,
+    // otherwise anchor movement can appear to affect neighboring nodes.
+    path._calcDimensions();
+    path.setCoords();
+    path.dirty = true;
+
+    // Re-render lines (simplest way: re-create them or update? Re-creating is expensive but safe)
+    // Optimization: Update all controls positions?
+    // Let's call updateControlsAndLines
+    updateControlsAndLines(path);
+
+    state.canvas.requestRenderAll();
+}
+
+function syncClosingAnchorIfNeeded(pathObj, controlData, x, y) {
+    if (!controlData || controlData.type !== 'anchor') return;
+    if (!hasDuplicateClosingAnchor(pathObj.path)) return;
+
+    const anchorCmdIndex = controlData.index;
+    const anchorCmd = getCommandType(pathObj.path, anchorCmdIndex);
+
+    // If the start anchor (M) moves, mirror it to the duplicated closing endpoint.
+    if (anchorCmd === 'M' && anchorCmdIndex === 0) {
+        const lastIdx = getLastDrawableSegmentIndex(pathObj.path);
+        if (lastIdx === null) return;
+        setCommandEndPoint(pathObj.path[lastIdx], x, y);
+    }
+}
+
+function recalculatePathPosition(path) {
     const oldPathOffset = { x: path.pathOffset.x, y: path.pathOffset.y };
     path._calcDimensions();
     const dX = path.pathOffset.x - oldPathOffset.x;
@@ -355,21 +426,232 @@ function onControlMove(e) {
     ];
 
     const worldShift = fabric.util.transformPoint({ x: dX, y: dY }, tMatrix);
-
     path.set({
         left: path.left + worldShift.x,
         top: path.top + worldShift.y
     });
+}
 
-    path.setCoords();
-    path.dirty = true;
+function toggleNodeType(control) {
+    const pathObj = control.data.parent;
+    if (!pathObj || !pathObj.path || !pathObj.path.length) return;
 
-    // Re-render lines (simplest way: re-create them or update? Re-creating is expensive but safe)
-    // Optimization: Update all controls positions?
-    // Let's call updateControlsAndLines
-    updateControlsAndLines(path);
+    const anchorIndex = control.data.index;
+    const incomingIndex = getIncomingSegmentIndex(pathObj.path, anchorIndex);
+    const outgoingIndex = getOutgoingSegmentIndex(pathObj.path, anchorIndex);
 
+    const incomingCmd = getCommandType(pathObj.path, incomingIndex);
+    const outgoingCmd = getCommandType(pathObj.path, outgoingIndex);
+
+    const shouldStraighten = isCurveCommand(incomingCmd) || isCurveCommand(outgoingCmd);
+
+    let changed = false;
+    if (shouldStraighten) {
+        if (incomingIndex !== null) {
+            changed = convertCurveSegmentToLine(pathObj, incomingIndex) || changed;
+        }
+        if (outgoingIndex !== null && outgoingIndex !== incomingIndex) {
+            changed = convertCurveSegmentToLine(pathObj, outgoingIndex) || changed;
+        }
+    } else {
+        if (incomingIndex !== null) {
+            changed = convertLineSegmentToCurve(pathObj, incomingIndex) || changed;
+        }
+        if (outgoingIndex !== null && outgoingIndex !== incomingIndex) {
+            changed = convertLineSegmentToCurve(pathObj, outgoingIndex) || changed;
+        }
+    }
+
+    if (!changed) return;
+
+    // Toggling line/curve should not translate the object.
+    // Keep anchors fixed and only refresh geometry + controls.
+    pathObj._calcDimensions();
+    pathObj.setCoords();
+    pathObj.dirty = true;
+    rebuildControls(pathObj);
+    state.canvas.setActiveObject(pathObj);
     state.canvas.requestRenderAll();
+    saveState();
+}
+
+function rebuildControls(pathObj) {
+    currentControls.forEach(c => state.canvas.remove(c));
+    currentLines.forEach(l => state.canvas.remove(l));
+    currentControls = [];
+    currentLines = [];
+    editingTarget = pathObj;
+    createControls(pathObj);
+}
+
+function convertLineSegmentToCurve(pathObj, segmentIndex) {
+    const segment = pathObj.path[segmentIndex];
+    if (!segment || segment[0].toUpperCase() !== 'L') return false;
+
+    const prevAnchor = getPreviousAnchorPoint(pathObj.path, segmentIndex);
+    if (!prevAnchor) return false;
+
+    const endX = segment[1];
+    const endY = segment[2];
+    const dx = endX - prevAnchor.x;
+    const dy = endY - prevAnchor.y;
+
+    const c1x = prevAnchor.x + dx / 3;
+    const c1y = prevAnchor.y + dy / 3;
+    const c2x = prevAnchor.x + (2 * dx) / 3;
+    const c2y = prevAnchor.y + (2 * dy) / 3;
+
+    pathObj.path[segmentIndex] = ['C', c1x, c1y, c2x, c2y, endX, endY];
+    return true;
+}
+
+function convertCurveSegmentToLine(pathObj, segmentIndex) {
+    const segment = pathObj.path[segmentIndex];
+    if (!segment || !segment[0]) return false;
+
+    const cmd = segment[0].toUpperCase();
+    if (cmd === 'C') {
+        pathObj.path[segmentIndex] = ['L', segment[5], segment[6]];
+        return true;
+    }
+    if (cmd === 'Q') {
+        pathObj.path[segmentIndex] = ['L', segment[3], segment[4]];
+        return true;
+    }
+    return false;
+}
+
+function getPreviousAnchorPoint(pathData, segmentIndex) {
+    for (let i = segmentIndex - 1; i >= 0; i--) {
+        const cmdData = pathData[i];
+        if (!cmdData || !cmdData[0]) continue;
+        const cmd = cmdData[0].toUpperCase();
+
+        if (cmd === 'M' || cmd === 'L') {
+            return { x: cmdData[1], y: cmdData[2] };
+        }
+        if (cmd === 'Q') {
+            return { x: cmdData[3], y: cmdData[4] };
+        }
+        if (cmd === 'C') {
+            return { x: cmdData[5], y: cmdData[6] };
+        }
+    }
+    return null;
+}
+
+function getIncomingSegmentIndex(pathData, anchorIndex) {
+    if (!pathData || anchorIndex === null || anchorIndex === undefined) return null;
+
+    const cmd = getCommandType(pathData, anchorIndex);
+    if (cmd && cmd !== 'M' && cmd !== 'Z') {
+        return anchorIndex;
+    }
+
+    // First anchor (M) in closed path: incoming is last drawable segment.
+    if (cmd === 'M' && isClosedPath(pathData)) {
+        for (let i = pathData.length - 1; i >= 0; i--) {
+            const t = getCommandType(pathData, i);
+            if (t && t !== 'M' && t !== 'Z') return i;
+        }
+    }
+    return null;
+}
+
+function getOutgoingSegmentIndex(pathData, anchorIndex) {
+    if (!pathData || anchorIndex === null || anchorIndex === undefined) return null;
+
+    for (let i = anchorIndex + 1; i < pathData.length; i++) {
+        const t = getCommandType(pathData, i);
+        if (t && t !== 'Z') return i;
+    }
+
+    // Last anchor in closed path: outgoing wraps to first drawable segment after M.
+    if (isClosedPath(pathData)) {
+        for (let i = 1; i < pathData.length; i++) {
+            const t = getCommandType(pathData, i);
+            if (t && t !== 'Z') return i;
+        }
+    }
+    return null;
+}
+
+function getCommandType(pathData, index) {
+    if (index === null || index === undefined || index < 0 || index >= pathData.length) return null;
+    const cmdData = pathData[index];
+    if (!cmdData || !cmdData[0]) return null;
+    return cmdData[0].toUpperCase();
+}
+
+function isCurveCommand(cmd) {
+    return cmd === 'C' || cmd === 'Q';
+}
+
+function isClosedPath(pathData) {
+    return pathData.some(cmdData => cmdData && cmdData[0] && cmdData[0].toUpperCase() === 'Z');
+}
+
+function getLastDrawableSegmentIndex(pathData) {
+    for (let i = pathData.length - 1; i >= 0; i--) {
+        const cmd = getCommandType(pathData, i);
+        if (cmd && cmd !== 'Z') return i;
+    }
+    return null;
+}
+
+function isDuplicateClosingAnchor(pathData, index, cmd) {
+    if (!pathData || !pathData.length) return false;
+    if (!isClosedPath(pathData)) return false;
+    if (index === 0) return false;
+    if (cmd === 'M' || cmd === 'Z') return false;
+
+    const first = pathData[0];
+    if (!first || getCommandType(pathData, 0) !== 'M') return false;
+
+    const firstX = first[1];
+    const firstY = first[2];
+    const end = getCommandEndPoint(pathData[index]);
+    if (!end) return false;
+
+    return pointsEqual(firstX, firstY, end.x, end.y);
+}
+
+function hasDuplicateClosingAnchor(pathData) {
+    const lastIdx = getLastDrawableSegmentIndex(pathData);
+    if (lastIdx === null) return false;
+    const lastCmd = getCommandType(pathData, lastIdx);
+    return isDuplicateClosingAnchor(pathData, lastIdx, lastCmd);
+}
+
+function getCommandEndPoint(cmdData) {
+    if (!cmdData || !cmdData[0]) return null;
+    const cmd = cmdData[0].toUpperCase();
+
+    if (cmd === 'M' || cmd === 'L') return { x: cmdData[1], y: cmdData[2] };
+    if (cmd === 'Q') return { x: cmdData[3], y: cmdData[4] };
+    if (cmd === 'C') return { x: cmdData[5], y: cmdData[6] };
+    return null;
+}
+
+function setCommandEndPoint(cmdData, x, y) {
+    if (!cmdData || !cmdData[0]) return;
+    const cmd = cmdData[0].toUpperCase();
+
+    if (cmd === 'M' || cmd === 'L') {
+        cmdData[1] = x;
+        cmdData[2] = y;
+    } else if (cmd === 'Q') {
+        cmdData[3] = x;
+        cmdData[4] = y;
+    } else if (cmd === 'C') {
+        cmdData[5] = x;
+        cmdData[6] = y;
+    }
+}
+
+function pointsEqual(x1, y1, x2, y2) {
+    const EPSILON = 0.0001;
+    return Math.abs(x1 - x2) < EPSILON && Math.abs(y1 - y2) < EPSILON;
 }
 
 function updateControlsOnMove(e) {
