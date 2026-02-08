@@ -37,6 +37,7 @@ export const CUSTOM_PROPS = [
     'uniformRadius', 'cornerRadius',
     'imgStrokeWidth', 'imgStroke',
     'blurAmount', 'blurShadow',
+    'brushStyle', 'brushColor',
     'lockMovementX', 'lockMovementY', 'lockScalingX', 'lockScalingY', 'lockRotation',
     'visible', 'selectable', 'evented'
 ];

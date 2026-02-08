@@ -3,9 +3,28 @@ import { AVAILABLE_FONTS, FONT_GROUPS } from './config.js';
 import { saveState } from './project.js';
 import { applyImageCornerRadius, applyBlur, updateStarPoints, updateStarOuterRadius, updateStarInnerRadius, updatePolygonSides, updatePolygonRadius } from './shapes.js';
 import { updateBackgroundColor, updateBackgroundOpacity } from './canvas.js';
+import { setBrushObjectStrokeColor, setBrushObjectStrokeWidth, getObjectStrokeColor, syncVectorBrush } from './vector-brush.js';
 
 
 let draggedElement = null;
+
+function applyStrokeColorAware(obj, color) {
+    if (!obj) return;
+    if (obj.type === 'group') {
+        obj.getObjects().forEach(child => applyStrokeColorAware(child, color));
+        return;
+    }
+    setBrushObjectStrokeColor(obj, color);
+}
+
+function applyStrokeWidthAware(obj, width) {
+    if (!obj) return;
+    if (obj.type === 'group') {
+        obj.getObjects().forEach(child => applyStrokeWidthAware(child, width));
+        return;
+    }
+    setBrushObjectStrokeWidth(obj, width);
+}
 
 export function initInterface() {
     // Toolbar default color pickers
@@ -111,13 +130,14 @@ export function initInterface() {
             state.defaults.stroke = e.target.value;
             strokePicker.parentElement.style.background = e.target.value;
             saveDefaults();
+            syncVectorBrush();
 
             // Apply to active selection
             if (state.canvas) {
                 const activeObjects = state.canvas.getActiveObjects();
                 if (activeObjects.length > 0) {
                     activeObjects.forEach(obj => {
-                        obj.set('stroke', state.defaults.stroke);
+                        applyStrokeColorAware(obj, state.defaults.stroke);
                     });
                     state.canvas.requestRenderAll();
                     saveState();
@@ -157,9 +177,8 @@ export function initInterface() {
                     const activeObjects = state.canvas.getActiveObjects();
                     if (activeObjects.length > 0) {
                         activeObjects.forEach(obj => {
-                            obj.set('strokeWidth', state.defaults.strokeWidth);
-                            // Also ensure stroke color is applied
-                            obj.set('stroke', state.defaults.stroke);
+                            applyStrokeWidthAware(obj, state.defaults.strokeWidth);
+                            applyStrokeColorAware(obj, state.defaults.stroke);
                         });
                         // Visual Sync
                         strokePicker.parentElement.style.background = state.defaults.stroke;
@@ -184,7 +203,7 @@ export function initInterface() {
                     const activeObjects = state.canvas.getActiveObjects();
                     if (activeObjects.length > 0) {
                         activeObjects.forEach(obj => {
-                            obj.set('strokeWidth', 0);
+                            applyStrokeWidthAware(obj, 0);
                         });
                         state.canvas.requestRenderAll();
                         saveState();
@@ -277,9 +296,9 @@ export function initInterface() {
             if (state.canvas) {
                 const activeObjects = state.canvas.getActiveObjects();
                 if (activeObjects.length > 0) {
-                    activeObjects.forEach(obj => {
-                        obj.set('fill', state.defaults.fill);
-                        obj.set('stroke', state.defaults.stroke);
+                        activeObjects.forEach(obj => {
+                            obj.set('fill', state.defaults.fill);
+                            applyStrokeColorAware(obj, state.defaults.stroke);
                         // Only update strokeWidth if we toggled presence? 
                         // Or always update? If we swap colors, we might want to keep the object's specific stroke width 
                         // UNLESS we are specifically toggling "No Stroke".
@@ -298,10 +317,10 @@ export function initInterface() {
                         // If newStrokeWidth > 0 AND object width > 0, keep object width (just swap color).
 
                         if (newStrokeWidth === 0) {
-                            obj.set('strokeWidth', 0);
+                            applyStrokeWidthAware(obj, 0);
                         } else {
                             if (obj.strokeWidth === 0) {
-                                obj.set('strokeWidth', newStrokeWidth);
+                                applyStrokeWidthAware(obj, newStrokeWidth);
                             }
                         }
                     });
@@ -351,9 +370,9 @@ export function initInterface() {
                 if (activeObjects.length > 0) {
                     activeObjects.forEach(obj => {
                         obj.set('fill', '#ffffff');
-                        obj.set('stroke', '#000000');
+                        applyStrokeColorAware(obj, '#000000');
                         if (obj.strokeWidth === 0) {
-                            obj.set('strokeWidth', state.defaults.strokeWidth);
+                            applyStrokeWidthAware(obj, state.defaults.strokeWidth);
                         }
                     });
                     state.canvas.requestRenderAll();
@@ -734,6 +753,7 @@ export function updatePropertiesPanel() {
         clearPropertiesPanel();
         return;
     }
+    const activeStrokeColor = getObjectStrokeColor(activeObj);
 
     let html = '';
 
@@ -863,11 +883,11 @@ export function updatePropertiesPanel() {
             <div class="property-group">
                 <label class="property-label">Stroke Color</label>
                  <div class="color-picker-row">
-                    <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
-                        <input type="color" value="${activeObj.stroke || '#000000'}"
+                    <div class="color-preview" style="background-color: ${activeStrokeColor || '#000000'}">
+                        <input type="color" value="${activeStrokeColor || '#000000'}"
                                oninput="updateObjectProperty('stroke', this.value)">
                     </div>
-                    <input type="text" class="property-input" value="${activeObj.stroke}"
+                    <input type="text" class="property-input" value="${activeStrokeColor || '#000000'}"
                            oninput="updateObjectProperty('stroke', this.value)">
                 </div>
             </div>
@@ -911,11 +931,11 @@ export function updatePropertiesPanel() {
              <div class="property-group">
                  <label class="property-label">Stroke Color</label>
                   <div class="color-picker-row">
-                     <div class="color-preview" style="background-color: ${activeObj.stroke || '#000000'}">
-                         <input type="color" value="${activeObj.stroke || '#000000'}"
+                     <div class="color-preview" style="background-color: ${activeStrokeColor || '#000000'}">
+                         <input type="color" value="${activeStrokeColor || '#000000'}"
                                 oninput="updateObjectProperty('stroke', this.value)">
                      </div>
-                     <input type="text" class="property-input" value="${activeObj.stroke}"
+                     <input type="text" class="property-input" value="${activeStrokeColor || '#000000'}"
                             oninput="updateObjectProperty('stroke', this.value)">
                  </div>
              </div>
@@ -1437,6 +1457,18 @@ export function updateObjectProperty(property, value) {
             return;
         }
 
+        if (prop === 'stroke') {
+            applyStrokeColorAware(obj, val);
+            if (obj.group) obj.group.dirty = true;
+            return;
+        }
+
+        if (prop === 'strokeWidth') {
+            applyStrokeWidthAware(obj, val);
+            if (obj.group) obj.group.dirty = true;
+            return;
+        }
+
         obj.set(prop, val);
 
         // Mark parent group as dirty if needed
@@ -1511,10 +1543,16 @@ export function updateObjectProperty(property, value) {
     if (property === 'stroke') {
         state.defaults.stroke = value;
         saveDefaults();
+        syncVectorBrush();
 
         // Sync toolbar picker
         const toolbarStroke = document.getElementById('defaultStrokeColor');
-        if (toolbarStroke) toolbarStroke.value = value;
+        if (toolbarStroke) {
+            toolbarStroke.value = value;
+            if (toolbarStroke.parentElement) {
+                toolbarStroke.parentElement.style.background = value;
+            }
+        }
     }
 
     if (property === 'fill' || property === 'stroke') {
