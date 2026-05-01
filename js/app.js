@@ -18,6 +18,7 @@ import {
     toggleFontWeight,
     toggleFontStyle,
     updateRectCorners,
+    updateImageGrayscale,
     updateImageCorners,
     updateImageStroke,
     updateBlur,
@@ -62,6 +63,7 @@ window.previewFont = previewFont;
 window.toggleFontWeight = toggleFontWeight;
 window.toggleFontStyle = toggleFontStyle;
 window.updateRectCorners = updateRectCorners;
+window.updateImageGrayscale = updateImageGrayscale;
 window.updateImageCorners = updateImageCorners;
 window.updateImageStroke = updateImageStroke;
 window.updateBlur = updateBlur;

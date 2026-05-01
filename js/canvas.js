@@ -10,6 +10,10 @@ import { handleVectorBrushPathCreated } from './vector-brush.js';
 
 export function initCanvas() {
     console.log('Initializing canvas...');
+    
+    // Disable WebGL filtering to fix image cropping bug on large images
+    fabric.filterBackend = new fabric.Canvas2dFilterBackend();
+    
     checkLayerLevelBlurSupport(); // Check for browser support first
     preloadFonts(); // Preload all fonts immediately
 
